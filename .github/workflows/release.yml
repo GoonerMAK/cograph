@@ -50,3 +50,11 @@ jobs:
         env:
           VSCE_PAT: ${{ secrets.VSCE_PAT }}
         run: npm run publish
+
+      # Publishes the same .vsix to Open VSX (Cursor, Windsurf, VSCodium).
+      # Skipped until the OVSX_PAT repository secret is configured.
+      - name: Publish to Open VSX
+        if: ${{ env.OVSX_PAT != '' }}
+        env:
+          OVSX_PAT: ${{ secrets.OVSX_PAT }}
+        run: npx --yes ovsx@1.2.0 publish "${{ steps.vsix.outputs.path }}"
