@@ -1,9 +1,10 @@
 # CoGraph
 
 [![CI](https://github.com/thraenbe/cograph/actions/workflows/ci.yml/badge.svg)](https://github.com/thraenbe/cograph/actions/workflows/ci.yml)
-[![VS Code Marketplace Version](https://img.shields.io/visual-studio-marketplace/v/thraenbe.cograph?label=marketplace)](https://marketplace.visualstudio.com/items?itemName=thraenbe.cograph)
-[![Installs](https://img.shields.io/visual-studio-marketplace/i/thraenbe.cograph)](https://marketplace.visualstudio.com/items?itemName=thraenbe.cograph)
-[![Rating](https://img.shields.io/visual-studio-marketplace/r/thraenbe.cograph)](https://marketplace.visualstudio.com/items?itemName=thraenbe.cograph&ssr=false#review-details)
+[![VS Code Marketplace Version](https://flat.badgen.net/vs-marketplace/v/thraenbe.cograph?label=marketplace)](https://marketplace.visualstudio.com/items?itemName=thraenbe.cograph)
+[![Installs](https://flat.badgen.net/vs-marketplace/i/thraenbe.cograph)](https://marketplace.visualstudio.com/items?itemName=thraenbe.cograph)
+[![Rating](https://flat.badgen.net/vs-marketplace/rating/thraenbe.cograph)](https://marketplace.visualstudio.com/items?itemName=thraenbe.cograph&ssr=false#review-details)
+[![Open VSX Version](https://img.shields.io/open-vsx/v/thraenbe/cograph?label=open%20vsx)](https://open-vsx.org/extension/thraenbe/cograph)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 
 > See your Python, TypeScript, JavaScript, Java, or C++ project as a living map — functions are nodes, calls are edges. Navigate your codebase by clicking. No configuration required.
