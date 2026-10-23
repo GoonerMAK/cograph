@@ -6,7 +6,11 @@
  * Outputs a JSON call graph to stdout:
  *   { "nodes": [{id, name, file, line, language}], "edges": [{source, target}] }
  *
- * Scope: workspace .ts/.tsx files (excludes .d.ts). Best-effort static analysis.
+ * Scope: workspace .ts/.tsx files (excludes .d.ts), plus the `<script lang="ts">`
+ * blocks of .vue / .svelte single-file components (sfcScript.js; a component is
+ * parsed as a virtual source with the file's own line numbers). Template
+ * expressions (`@click="save()"`, `{handler()}`) are not analyzed.
+ * Best-effort static analysis.
  */
 
 'use strict';
@@ -19,6 +23,21 @@ const fs   = require('fs');
 const ts   = require('typescript');
 
 const { isSkippedDirName } = require('./skipDirs.js');
+const { isSfcPath, ownsSfc, readAnalyzerSource } = require('./sfcScript.js');
+
+/** A file this analyzer parses: .ts/.tsx (not .d.ts) or an SFC whose script is TypeScript. */
+function isTsPath(filepath) {
+  if (filepath.endsWith('.d.ts')) { return false; }
+  if (filepath.endsWith('.ts') || filepath.endsWith('.tsx')) { return true; }
+  return isSfcPath(filepath) && ownsSfc(filepath, 'ts');
+}
+
+/** Explicit ScriptKind for an SFC block; undefined lets the parser infer it from .ts/.tsx. */
+function scriptKindOf(lang) {
+  if (lang === 'tsx') { return ts.ScriptKind.TSX; }
+  if (lang === 'ts') { return ts.ScriptKind.TS; }
+  return undefined;
+}
 
 function collectTsFiles(root) {
   const results = [];
@@ -29,8 +48,7 @@ function collectTsFiles(root) {
       const full = path.join(dir, entry.name);
       if (entry.isDirectory()) {
         if (!isSkippedDirName(entry.name)) walk(full);
-      } else if (entry.isFile() && !entry.name.endsWith('.d.ts') &&
-                 (entry.name.endsWith('.ts') || entry.name.endsWith('.tsx'))) {
+      } else if (entry.isFile() && isTsPath(full)) {
         results.push(full);
       }
     }
@@ -46,11 +64,11 @@ function getLine(sourceFile, node) {
 function collectDefinitions(files) {
   const definitions = {};
   for (const filepath of files) {
-    let source;
-    try { source = fs.readFileSync(filepath, 'utf8'); } catch { continue; }
+    const read = readAnalyzerSource(filepath, 'ts');
+    if (!read) { continue; }
     let sourceFile;
     try {
-      sourceFile = ts.createSourceFile(filepath, source, ts.ScriptTarget.Latest, true);
+      sourceFile = ts.createSourceFile(filepath, read.source, ts.ScriptTarget.Latest, true, scriptKindOf(read.lang));
     } catch { continue; }
 
     function visit(node) {
@@ -194,11 +212,11 @@ function collectCalls(files, definitions, root) {
   const libraryNodes = new Map();
 
   for (const filepath of files) {
-    let source;
-    try { source = fs.readFileSync(filepath, 'utf8'); } catch { continue; }
+    const read = readAnalyzerSource(filepath, 'ts');
+    if (!read) { continue; }
     let sourceFile;
     try {
-      sourceFile = ts.createSourceFile(filepath, source, ts.ScriptTarget.Latest, true);
+      sourceFile = ts.createSourceFile(filepath, read.source, ts.ScriptTarget.Latest, true, scriptKindOf(read.lang));
     } catch { continue; }
 
     const importMap = collectImportMap(sourceFile);
@@ -308,8 +326,7 @@ function explicitFileList() {
   if (i === -1 || !process.argv[i + 1]) { return null; }
   let raw;
   try { raw = fs.readFileSync(process.argv[i + 1], 'utf8'); } catch { return []; }
-  return raw.split('\n').map(s => s.trim()).filter(Boolean)
-    .filter(f => !f.endsWith('.d.ts') && (f.endsWith('.ts') || f.endsWith('.tsx')));
+  return raw.split('\n').map(s => s.trim()).filter(Boolean).filter(isTsPath);
 }
 
 function main() {
@@ -328,5 +345,5 @@ function main() {
 main();
 
 if (typeof module !== 'undefined') {
-  module.exports = { collectTsFiles, collectDefinitions, collectCalls };
+  module.exports = { collectTsFiles, collectDefinitions, collectCalls, isTsPath };
 }

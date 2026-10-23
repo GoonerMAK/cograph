@@ -6,8 +6,11 @@
  * Outputs a JSON call graph to stdout:
  *   { "nodes": [{id, name, file, line, language}], "edges": [{source, target}] }
  *
- * Scope: workspace .js/.jsx/.mjs/.cjs files. Best-effort static analysis.
- * Handles both ESM (import) and CommonJS (require()) imports.
+ * Scope: workspace .js/.jsx/.mjs/.cjs files, plus the `<script>` blocks of .vue /
+ * .svelte single-file components that are not `lang="ts"` (sfcScript.js; a
+ * component is parsed as a virtual source with the file's own line numbers).
+ * Template expressions (`@click="save()"`, `{handler()}`) are not analyzed.
+ * Best-effort static analysis. Handles both ESM (import) and CommonJS (require()) imports.
  */
 
 'use strict';
@@ -20,7 +23,14 @@ const fs   = require('fs');
 const ts   = require('typescript');
 
 const { isSkippedDirName } = require('./skipDirs.js');
+const { isSfcPath, ownsSfc, readAnalyzerSource } = require('./sfcScript.js');
 const JS_EXTENSIONS  = new Set(['.js', '.jsx', '.mjs', '.cjs']);
+
+/** A file this analyzer parses: .js/.jsx/.mjs/.cjs or an SFC whose script is JavaScript. */
+function isJsPath(filepath) {
+  if (JS_EXTENSIONS.has(path.extname(filepath))) { return true; }
+  return isSfcPath(filepath) && ownsSfc(filepath, 'js');
+}
 
 function collectJsFiles(root) {
   const results = [];
@@ -31,7 +41,7 @@ function collectJsFiles(root) {
       const full = path.join(dir, entry.name);
       if (entry.isDirectory()) {
         if (!isSkippedDirName(entry.name)) walk(full);
-      } else if (entry.isFile() && JS_EXTENSIONS.has(path.extname(entry.name))) {
+      } else if (entry.isFile() && isJsPath(full)) {
         results.push(full);
       }
     }
@@ -47,11 +57,11 @@ function getLine(sourceFile, node) {
 function collectDefinitions(files) {
   const definitions = {};
   for (const filepath of files) {
-    let source;
-    try { source = fs.readFileSync(filepath, 'utf8'); } catch { continue; }
+    const read = readAnalyzerSource(filepath, 'js');
+    if (!read) { continue; }
     let sourceFile;
     try {
-      sourceFile = ts.createSourceFile(filepath, source, ts.ScriptTarget.Latest, true, ts.ScriptKind.JS);
+      sourceFile = ts.createSourceFile(filepath, read.source, ts.ScriptTarget.Latest, true, ts.ScriptKind.JS);
     } catch { continue; }
 
     function visit(node) {
@@ -232,11 +242,11 @@ function collectCalls(files, definitions, root) {
   const libraryNodes = new Map();
 
   for (const filepath of files) {
-    let source;
-    try { source = fs.readFileSync(filepath, 'utf8'); } catch { continue; }
+    const read = readAnalyzerSource(filepath, 'js');
+    if (!read) { continue; }
     let sourceFile;
     try {
-      sourceFile = ts.createSourceFile(filepath, source, ts.ScriptTarget.Latest, true, ts.ScriptKind.JS);
+      sourceFile = ts.createSourceFile(filepath, read.source, ts.ScriptTarget.Latest, true, ts.ScriptKind.JS);
     } catch { continue; }
 
     const importMap = collectImportMap(sourceFile);
@@ -345,8 +355,7 @@ function explicitFileList() {
   if (i === -1 || !process.argv[i + 1]) { return null; }
   let raw;
   try { raw = fs.readFileSync(process.argv[i + 1], 'utf8'); } catch { return []; }
-  return raw.split('\n').map(s => s.trim()).filter(Boolean)
-    .filter(f => JS_EXTENSIONS.has(path.extname(f)));
+  return raw.split('\n').map(s => s.trim()).filter(Boolean).filter(isJsPath);
 }
 
 function main() {
@@ -365,5 +374,5 @@ function main() {
 main();
 
 if (typeof module !== 'undefined') {
-  module.exports = { collectJsFiles, collectDefinitions, collectCalls };
+  module.exports = { collectJsFiles, collectDefinitions, collectCalls, isJsPath };
 }
