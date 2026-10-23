@@ -48,6 +48,7 @@ const EXT_LANGUAGE: Record<string, StructureLanguage> = {
   '.java': 'java',
   '.cpp': 'cpp', '.cc': 'cpp', '.cxx': 'cpp', '.c++': 'cpp',
   '.hpp': 'cpp', '.hh': 'cpp', '.hxx': 'cpp', '.h++': 'cpp', '.h': 'cpp',
+  '.vue': 'typescript', '.svelte': 'typescript', // parse-free guess; the analyzer sets the node's real language
 };
 
 function splitSegments(p: string): string[] {

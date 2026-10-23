@@ -175,7 +175,7 @@ function inferLangFromPath(fp) {
   const dot = fp.lastIndexOf('.');
   const ext = dot >= 0 ? fp.slice(dot) : '';
   if (ext === '.py') return 'python';
-  if (ext === '.ts' || ext === '.tsx') return 'typescript';
+  if (ext === '.ts' || ext === '.tsx' || ext === '.vue' || ext === '.svelte') return 'typescript';
   if (ext === '.js' || ext === '.jsx' || ext === '.mjs' || ext === '.cjs') return 'javascript';
   if (ext === '.java') return 'java';
   if (ext === '.cpp' || ext === '.cc' || ext === '.cxx' || ext === '.c++'

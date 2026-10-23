@@ -225,6 +225,8 @@ export class GraphProvider {
             doc.uri.fsPath.endsWith('.jsx') ||
             doc.uri.fsPath.endsWith('.mjs') ||
             doc.uri.fsPath.endsWith('.cjs') ||
+            doc.uri.fsPath.endsWith('.vue') ||
+            doc.uri.fsPath.endsWith('.svelte') ||
             doc.uri.fsPath.endsWith('.java') ||
             doc.uri.fsPath.endsWith('.cpp') ||
             doc.uri.fsPath.endsWith('.cc') ||

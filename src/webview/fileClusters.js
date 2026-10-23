@@ -33,6 +33,7 @@ const FC_EXT_LANG = {
   '.java': 'java',
   '.cpp': 'cpp', '.cc': 'cpp', '.cxx': 'cpp', '.c++': 'cpp',
   '.hpp': 'cpp', '.hh': 'cpp', '.hxx': 'cpp', '.h++': 'cpp', '.h': 'cpp',
+  '.vue': 'typescript', '.svelte': 'typescript',
 };
 function fcLangFromPath(fp) {
   const dot = fp.lastIndexOf('.');

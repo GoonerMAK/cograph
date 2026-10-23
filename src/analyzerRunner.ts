@@ -18,6 +18,7 @@ export const RETRY_BACKOFF_MS = [800, 1500, 3000];
 const SOURCE_EXTS = new Set([
   '.py', '.ts', '.tsx', '.js', '.jsx', '.mjs', '.cjs', '.java',
   '.cpp', '.cc', '.cxx', '.c++', '.hpp', '.hh', '.hxx', '.h++', '.h',
+  '.vue', '.svelte', // single-file components: their <script> block goes to the TS/JS analyzer
 ]);
 
 export type AnalyzerStatus =
