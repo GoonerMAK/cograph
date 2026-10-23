@@ -165,6 +165,20 @@ suite('sfcScript: script block extraction', () => {
     assert.deepStrictEqual(blocks.map((b: any) => b.lang), ['ts', 'ts']);
   });
 
+  test('a `>` inside a quoted attribute (Vue generic="T extends Foo<Bar>") does not end the tag', () => {
+    const src = '<script setup lang="ts" generic="T extends Foo<Bar>">\nfunction pick(x: T) { return x; }\n</script>\n';
+    const blocks = sfc.extractScriptBlocks(src);
+    assert.strictEqual(blocks.length, 1);
+    assert.strictEqual(blocks[0].lang, 'ts');
+    assert.strictEqual(blocks[0].code, '\nfunction pick(x: T) { return x; }\n', 'the code starts after the real `>`');
+  });
+
+  test('attribute names match whole words: data-lang / data-src are not lang / src', () => {
+    const blocks = sfc.extractScriptBlocks('<script data-lang="ts" data-src="x">\nconst a = 1;\n</script>\n');
+    assert.strictEqual(blocks.length, 1, 'data-src is not an external script');
+    assert.strictEqual(blocks[0].lang, 'js', 'data-lang is not the lang attribute');
+  });
+
   test('a <script> inside an HTML comment and a <script src="…"> are not blocks', () => {
     const src = '<!-- <script>\nnope()\n</script> -->\n<script src="./external.js"></script>\n<template></template>\n';
     assert.deepStrictEqual(sfc.extractScriptBlocks(src), []);
@@ -173,6 +187,10 @@ suite('sfcScript: script block extraction', () => {
 
   test('a file without any script block yields no blocks and a null language', () => {
     assert.deepStrictEqual(sfc.extractScriptBlocks('<template><p>static</p></template>\n'), []);
+  });
+
+  test('an unterminated opening tag (`<script lang="ts"` without `>`) yields no block, no throw', () => {
+    assert.deepStrictEqual(sfc.extractScriptBlocks('<template></template>\n<script lang="ts"\nfunction f() {}\n'), []);
   });
 
   test('an unterminated <script> block runs to the end of the file (no throw)', () => {

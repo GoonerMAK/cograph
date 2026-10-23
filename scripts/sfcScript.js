@@ -35,11 +35,33 @@ function isSfcPath(filepath) {
   return SFC_EXTENSIONS.has(path.extname(filepath).toLowerCase());
 }
 
+/** Value of attribute `name` in a tag's attribute text, or null when absent. */
+function attrValue(attrs, name) {
+  const re = new RegExp(`(?:^|\\s)${name}\\s*(?:=\\s*(?:"([^"]*)"|'([^']*)'|([^\\s"'>]+)))?`, 'i');
+  const m = re.exec(attrs);
+  if (!m) { return null; }
+  return (m[1] ?? m[2] ?? m[3] ?? '').trim();
+}
+
 /** `lang` attribute of a `<script …>` tag, lower-cased; 'js' when absent. */
 function scriptLang(attrs) {
-  const m = /\blang\s*=\s*(?:"([^"]*)"|'([^']*)'|([^\s"'>]+))/i.exec(attrs);
-  const lang = (m ? (m[1] ?? m[2] ?? m[3]) : '').trim().toLowerCase();
+  const lang = (attrValue(attrs, 'lang') || '').toLowerCase();
   return lang || 'js';
+}
+
+/**
+ * Index of the `>` that closes the tag starting at `tagStart`, honouring quoted
+ * attribute values (`generic="T extends Foo<Bar>"`), or -1 when unterminated.
+ */
+function tagEnd(source, tagStart) {
+  let quote = '';
+  for (let i = tagStart; i < source.length; i++) {
+    const c = source[i];
+    if (quote) { if (c === quote) { quote = ''; } continue; }
+    if (c === '"' || c === "'") { quote = c; continue; }
+    if (c === '>') { return i; }
+  }
+  return -1;
 }
 
 /** 1-based line number of a character offset. */
@@ -59,7 +81,7 @@ function lineAt(source, offset) {
  */
 function extractScriptBlocks(source) {
   const blocks = [];
-  const open = /<!--|<script\b([^>]*)>/gi;
+  const open = /<!--|<script\b/gi;
   let m;
   while ((m = open.exec(source)) !== null) {
     if (m[0] === '<!--') {
@@ -68,14 +90,16 @@ function extractScriptBlocks(source) {
       open.lastIndex = close + 3;
       continue;
     }
-    const attrs = m[1] || '';
-    const start = m.index + m[0].length;
+    const gt = tagEnd(source, m.index + m[0].length);
+    if (gt === -1) { break; }
+    const attrs = source.slice(m.index + m[0].length, gt);
+    const start = gt + 1;
     const closeTag = /<\/script\s*>/gi;
     closeTag.lastIndex = start;
     const c = closeTag.exec(source);
     const end = c ? c.index : source.length;
     open.lastIndex = c ? c.index + c[0].length : source.length;
-    if (/\bsrc\s*=/i.test(attrs)) { continue; }
+    if (attrValue(attrs, 'src') !== null) { continue; }
     blocks.push({ code: source.slice(start, end), lang: scriptLang(attrs), line: lineAt(source, start), start, end, attrs });
   }
   return blocks;
