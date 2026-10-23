@@ -190,11 +190,18 @@ function findFunctionDeclarator(decl) {
     else if (!DECLARATOR_WRAPPERS.has(cur.type)) { break; } // reached the name
     cur = innerDeclarator(cur);
   }
-  if (!found) { return null; }
-  let name = innerDeclarator(found);
+  return found && declaratorName(found) ? found : null;
+}
+
+/**
+ * The name node of a function_declarator (identifier, field_identifier,
+ * qualified_identifier, destructor_name, …), looked up through parentheses.
+ * Null when a pointer sits between the declarator and the name (`(*cb)(int)`).
+ */
+function declaratorName(funcDecl) {
+  let name = innerDeclarator(funcDecl);
   while (name && name.type === 'parenthesized_declarator') { name = innerDeclarator(name); }
-  if (!name || name.type.endsWith('declarator')) { return null; } // pointer before the name
-  return found;
+  return name && !name.type.endsWith('declarator') ? name : null;
 }
 
 // ── Declarations vs definitions ──────────────────────────────────────────────
@@ -207,22 +214,27 @@ function findFunctionDeclarator(decl) {
  * Without this, every `.h`/source pair yields two nodes for one function and
  * every call edge is duplicated — pure visual noise that also inflates the
  * layout. A declaration with no matching definition (the body lives in a
- * library or an un-indexed file) is kept so calls still resolve to a node; its
- * internal `isDeclaration` marker is stripped either way.
+ * library or an un-indexed file) is kept so calls still resolve to a node — one
+ * node, even when several files declare it (a C header and a forward
+ * declaration in a `.c`); its internal `isDeclaration` marker is stripped.
  */
 function pruneRedundantDeclarations(definitions) {
+  const keyOf = (def) => `${def.className || ''}::${def.name}`;
   const definedKeys = new Set();
   for (const def of Object.values(definitions)) {
-    if (!def.isDeclaration) { definedKeys.add(`${def.className || ''}::${def.name}`); }
+    if (!def.isDeclaration) { definedKeys.add(keyOf(def)); }
   }
+  const keptDeclarations = new Set();
   for (const [id, def] of Object.entries(definitions)) {
     if (!def.isDeclaration) { continue; }
-    if (definedKeys.has(`${def.className || ''}::${def.name}`)) { delete definitions[id]; }
-    else { delete def.isDeclaration; } // surviving declaration — drop the internal marker
+    const key = keyOf(def);
+    if (definedKeys.has(key) || keptDeclarations.has(key)) { delete definitions[id]; continue; }
+    keptDeclarations.add(key);
+    delete def.isDeclaration; // surviving declaration — drop the internal marker
   }
 }
 
 module.exports = {
   C_FAMILY_EXTS, createTreeSitterSession, collectCFamilyFiles, explicitFileList,
-  isCHeader, splitCFamilyFiles, findFunctionDeclarator, pruneRedundantDeclarations,
+  isCHeader, splitCFamilyFiles, findFunctionDeclarator, declaratorName, pruneRedundantDeclarations,
 };

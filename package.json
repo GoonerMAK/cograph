@@ -1,7 +1,7 @@
 {
   "name": "cograph",
   "displayName": "CoGraph",
-  "description": "See your Python, TypeScript, JavaScript, Java or C++ project as a living map — functions are nodes, calls are edges",
+  "description": "See your Python, TypeScript, JavaScript, Java, C or C++ project as a living map — functions are nodes, calls are edges",
   "version": "1.4.0",
   "publisher": "thraenbe",
   "icon": "media/icon.png",
@@ -19,6 +19,7 @@
     "typescript",
     "javascript",
     "java",
+    "c",
     "cpp",
     "c++",
     "call graph",
@@ -285,6 +286,7 @@
     "test": "node ./out/test/runTest.js",
     "lint": "eslint src --ext ts",
     "build:cpp-grammar": "tree-sitter build --wasm node_modules/tree-sitter-cpp -o scripts/tree-sitter-cpp.wasm",
+    "build:c-grammar": "tree-sitter build --wasm node_modules/tree-sitter-c -o scripts/tree-sitter-c.wasm",
     "package": "node --require ./scripts/node18-polyfill.js ./node_modules/@vscode/vsce/vsce package",
     "publish": "node --require ./scripts/node18-polyfill.js ./node_modules/@vscode/vsce/vsce publish",
     "perf:bench": "npm run compile && node scripts/perf/build-page.cjs && node scripts/perf/run.mjs",
@@ -322,6 +324,7 @@
     "jsdom": "^25.0.1",
     "mocha": "^10.4.0",
     "sinon": "^17.0.0",
+    "tree-sitter-c": "^0.23.2",
     "tree-sitter-cli": "0.26.9",
     "tree-sitter-cpp": "^0.22.3",
     "zod": "3.25.76"
