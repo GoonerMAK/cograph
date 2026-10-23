@@ -13,6 +13,8 @@ function showLibDocPopup(d) {
     }
   } else if (d.language === 'cpp') {
     docsUrl = `https://en.cppreference.com/mwiki/index.php?search=${encodeURIComponent(d.libraryName + '::' + d.name)}`;
+  } else if (d.language === 'c') {
+    docsUrl = `https://en.cppreference.com/mwiki/index.php?search=${encodeURIComponent(d.name)}`;
   } else {
     docsUrl = `https://www.npmjs.com/package/${d.libraryName}`;
   }
@@ -22,6 +24,7 @@ function showLibDocPopup(d) {
     d.language === 'python' ? 'Python'
     : d.language === 'java' ? 'Java'
     : d.language === 'cpp' ? 'C++'
+    : d.language === 'c' ? 'C'
     : 'TypeScript';
   document.getElementById('lib-doc-lang-badge').className = `lang-badge lang-badge-${d.language}`;
   document.getElementById('lib-doc-function').textContent = d.name;
