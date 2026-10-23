@@ -5,6 +5,16 @@ All notable changes to CoGraph are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Added
+- **Vue and Svelte single-file components.** `.vue` and `.svelte` files are analyzed through
+  their `<script>` blocks (Vue `<script>` + `<script setup>`, Svelte module + instance), so calls
+  from components into `src/` modules appear in the graph. A block with `lang="ts"` goes through
+  the TypeScript analyzer, every other block through the JavaScript one; components inherit that
+  colour. Node positions, jump-to-source and the source popup use the component file's own line
+  numbers. Template expressions (`@click="save()"`) are not analyzed (see README *Limitations*).
+
 ## [1.4.0] - 2026-10-09
 
 The release that took things away. Two of the three AI features were measured rather than
