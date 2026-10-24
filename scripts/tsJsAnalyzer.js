@@ -1,3 +1,4 @@
+// tsJsAnalyzer.js — the analyzer core shared by analyze_ts.js and analyze_js.js.
 'use strict';
 
 const { createNarrower, withStats, resolveThisCall } = require('./narrowCalls.js');
@@ -58,18 +59,21 @@ function collectDefinitions(files, options) {
           const name = node.name.getText(sourceFile);
           const line = getLine(sourceFile, node);
           const id = `${filepath}::${name}::${line}`;
-          definitions[id] = { id, name, file: filepath, line, language, ...classInfo(node.parent, sourceFile) };
+          definitions[id] = { id, name, file: filepath, line, language,
+                              ...classInfo(node.parent, sourceFile) };
         } else if (ts.isConstructorDeclaration(node) && ts.isClassDeclaration(node.parent)) {
           const line = getLine(sourceFile, node);
           const id = `${filepath}::constructor::${line}`;
-          definitions[id] = { id, name: 'constructor', file: filepath, line, language, ...classInfo(node.parent, sourceFile) };
+          definitions[id] = { id, name: 'constructor', file: filepath, line, language,
+                              ...classInfo(node.parent, sourceFile) };
         } else if ((ts.isGetAccessorDeclaration(node) || ts.isSetAccessorDeclaration(node))
                    && ts.isClassDeclaration(node.parent) && node.name) {
           const prefix = ts.isGetAccessorDeclaration(node) ? 'get ' : 'set ';
           const name = prefix + node.name.getText(sourceFile);
           const line = getLine(sourceFile, node);
           const id = `${filepath}::${name}::${line}`;
-          definitions[id] = { id, name, file: filepath, line, language, ...classInfo(node.parent, sourceFile) };
+          definitions[id] = { id, name, file: filepath, line, language,
+                              ...classInfo(node.parent, sourceFile) };
         } else if (ts.isVariableStatement(node)) {
           for (const decl of node.declarationList.declarations) {
             if (ts.isIdentifier(decl.name) && decl.initializer &&
