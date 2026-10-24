@@ -151,6 +151,17 @@ suite('Library node generation', () => {
     assert.deepStrictEqual(libraryNodes.map((n: any) => n.id), ['library::path::join']);
   });
 
+  test('toString really imported is still a library import', () => {
+    const file = path.join(tmpDir, 'imported-proto.ts');
+    fs.writeFileSync(file, [
+      "import { toString } from 'fmt';",
+      'function str() { return toString(); }',
+    ].join('\n'));
+    const defs = collectDefinitions([file]);
+    const { libraryNodes } = collectCalls([file], defs);
+    assert.deepStrictEqual(libraryNodes.map((n: any) => n.id), ['library::fmt::toString']);
+  });
+
   test('library edge has isLibraryEdge=true', () => {
     const file = path.join(tmpDir, 'libedge.ts');
     fs.writeFileSync(file, [

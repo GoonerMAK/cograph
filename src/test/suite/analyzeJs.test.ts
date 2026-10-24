@@ -300,6 +300,17 @@ suite('collectCalls (JS)', () => {
     assert.deepStrictEqual(libraryNodes.map((n: any) => n.id), ['library::path::join']);
   });
 
+  test('toString really imported with require() → still a library', () => {
+    const file = path.join(tmpDir, 'imported-proto.js');
+    fs.writeFileSync(file, [
+      "const { toString } = require('fmt');",
+      'function str() { return toString(); }',
+    ].join('\n'));
+    const defs = collectDefinitions([file]);
+    const { libraryNodes } = collectCalls([file], defs);
+    assert.deepStrictEqual(libraryNodes.map((n: any) => n.id), ['library::fmt::toString']);
+  });
+
   test('library node has correct metadata', () => {
     const file = path.join(tmpDir, 'libmeta.js');
     fs.writeFileSync(file, [
