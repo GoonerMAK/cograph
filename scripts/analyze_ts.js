@@ -11,32 +11,20 @@
 
 'use strict';
 
-const path = require('path');
 const { createNarrower, withStats, resolveThisCall } = require('./narrowCalls.js');
 const fs   = require('fs');
 // Bare specifier so esbuild can inline it into the packaged bundle (dev runs
 // resolve it from the repo's node_modules via normal module resolution).
 const ts   = require('typescript');
 
-const { isSkippedDirName } = require('./skipDirs.js');
+const { collectSourceFiles, explicitFileList } = require('./sourceFiles.js');
+
+function isTsFile(file) {
+  return !file.endsWith('.d.ts') && (file.endsWith('.ts') || file.endsWith('.tsx'));
+}
 
 function collectTsFiles(root) {
-  const results = [];
-  function walk(dir) {
-    let entries;
-    try { entries = fs.readdirSync(dir, { withFileTypes: true }); } catch { return; }
-    for (const entry of entries) {
-      const full = path.join(dir, entry.name);
-      if (entry.isDirectory()) {
-        if (!isSkippedDirName(entry.name)) walk(full);
-      } else if (entry.isFile() && !entry.name.endsWith('.d.ts') &&
-                 (entry.name.endsWith('.ts') || entry.name.endsWith('.tsx'))) {
-        results.push(full);
-      }
-    }
-  }
-  walk(root);
-  return results;
+  return collectSourceFiles(root, isTsFile);
 }
 
 function getLine(sourceFile, node) {
@@ -300,25 +288,13 @@ function collectCalls(files, definitions, root) {
   return { edges, libraryNodes: Array.from(libraryNodes.values()), stats: narrower.stats };
 }
 
-// Subset mode: `--files <listpath>` analyzes only the newline-separated files in
-// <listpath> (filtered to this analyzer's extensions), instead of walking root.
-// Returns null when --files is absent so the caller falls back to a full walk.
-function explicitFileList() {
-  const i = process.argv.indexOf('--files');
-  if (i === -1 || !process.argv[i + 1]) { return null; }
-  let raw;
-  try { raw = fs.readFileSync(process.argv[i + 1], 'utf8'); } catch { return []; }
-  return raw.split('\n').map(s => s.trim()).filter(Boolean)
-    .filter(f => !f.endsWith('.d.ts') && (f.endsWith('.ts') || f.endsWith('.tsx')));
-}
-
 function main() {
   if (process.argv.length < 3) {
     process.stderr.write('Usage: analyze_ts.js <workspace_root> [--files <listpath>]\n');
     process.exit(1);
   }
   const root = process.argv[2];
-  const files = explicitFileList() ?? collectTsFiles(root);
+  const files = explicitFileList(isTsFile) ?? collectTsFiles(root);
   const definitions = collectDefinitions(files);
   const { edges, libraryNodes, stats } = collectCalls(files, definitions, root);
   const nodes = [...Object.values(definitions), ...libraryNodes];
