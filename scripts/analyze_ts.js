@@ -325,7 +325,9 @@ function main() {
   require('./graphOutput.js').writeGraph(withStats({ nodes, edges, files }, stats));
 }
 
-main();
+if (require.main === module) {
+  main();
+}
 
 if (typeof module !== 'undefined') {
   module.exports = { collectTsFiles, collectDefinitions, collectCalls };
