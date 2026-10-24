@@ -141,7 +141,7 @@ const { applyResizeDelta, applySavedViewSettings, applySavedDrilldownState, appl
 
 // Load popups.js factory for textarea handler tests
 // eslint-disable-next-line @typescript-eslint/no-require-imports
-const { createFuncPopupInstance } = require('../../../src/webview/popups.js');
+const { createFuncPopupInstance, closeFuncPopupInstance } = require('../../../src/webview/popups.js');
 
 // ---------------------------------------------------------------------------
 // Helper: dispatch a synthetic event on a DOM element
@@ -393,6 +393,24 @@ suite('Textarea keyboard handlers', () => {
     const evt = dispatchKey(inst.textarea, 'keydown', 's', { ctrlKey: true });
     assert.ok(saveCalled || evt.defaultPrevented,
       'Ctrl+S should trigger save or prevent default');
+  });
+});
+
+suite('Function popup close', () => {
+  const mouse = (target: any, type: string, clientX: number) =>
+    target.dispatchEvent(new dom.window.MouseEvent(type, { bubbles: true, clientX, clientY: 0 }));
+
+  test('a closed popup no longer follows the mouse on the document', () => {
+    const inst = createFuncPopupInstance({ id: 'closed-fn', name: 'closedFunc', file: '/test.ts', line: 1, language: 'typescript' });
+    (global as any).state.funcPopups.set('closed-fn', inst);
+    mouse(inst.card.querySelector('.func-header'), 'mousedown', 0);
+    closeFuncPopupInstance(inst);
+    const leftAtClose = inst.card.style.left;
+
+    mouse(dom.window.document, 'mousemove', 120);
+
+    assert.strictEqual(inst.card.style.left, leftAtClose);
+    assert.ok(!(global as any).state.funcPopups.has('closed-fn'));
   });
 });
 
