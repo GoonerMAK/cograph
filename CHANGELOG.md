@@ -13,6 +13,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   on the panel's main thread. On a synthetic graph of 30 000 functions and 120 000 calls
   the step alone took about 4 s; the library nodes are now collected once, and the same
   step takes about 15 ms.
+  
+- **A closed function popup lets go of the mouse.** Each popup listened for mouse moves on
+  the whole panel so it could be dragged and resized, and closing it never stopped those
+  listeners. Every popup ever opened kept its card and source text in memory and ran on
+  every mouse move (100 handlers per move after 50 popups). Closing a popup now removes them.
 
 ## [1.4.0] - 2026-10-09
 
