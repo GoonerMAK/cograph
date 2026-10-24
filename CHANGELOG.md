@@ -5,6 +5,14 @@ All notable changes to CoGraph are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Fixed
+- **A closed function popup lets go of the mouse.** Each popup listened for mouse moves on
+  the whole panel so it could be dragged and resized, and closing it never stopped those
+  listeners. Every popup ever opened kept its card and source text in memory and ran on
+  every mouse move (100 handlers per move after 50 popups). Closing a popup now removes them.
+
 ## [1.4.0] - 2026-10-09
 
 The release that took things away. Two of the three AI features were measured rather than
