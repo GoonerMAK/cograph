@@ -5,6 +5,15 @@ All notable changes to CoGraph are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Fixed
+- **Timeline playback starts without a freeze on large graphs.** Working out when each
+  library node appears looked its target up by scanning every node, once per call, so the
+  panel hung for seconds before the first frame on a big project (about 4 s for 30 000
+  functions and 120 000 calls). The library nodes are now collected once, and the same
+  graph starts in milliseconds.
+
 ## [1.4.0] - 2026-10-09
 
 The release that took things away. Two of the three AI features were measured rather than
