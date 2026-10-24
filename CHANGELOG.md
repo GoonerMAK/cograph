@@ -19,6 +19,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   listeners. Every popup ever opened kept its card and source text in memory and ran on
   every mouse move (100 handlers per move after 50 popups). Closing a popup now removes them.
 
+### Changed
+- CI now runs `npm run lint` on every push and pull request. The PR template has asked for a
+  clean lint since 1.1; this is what enforces it.
+- Every GitHub Action in the workflows is pinned to a commit SHA with the version in a comment,
+  and both workflows declare the least `permissions` they need. Dependabot keeps the pins current.
+
+### Security
+- Releases attest their build provenance (SLSA, via `actions/attest-build-provenance`). A
+  downloaded `.vsix` can be verified with `gh attestation verify <file> -R thraenbe/cograph`.
+- SECURITY.md names 1.4.x as the supported line.
+
 ## [1.4.0] - 2026-10-09
 
 The release that took things away. Two of the three AI features were measured rather than
@@ -456,7 +467,7 @@ Measured on a 3 000-function repository in VS Code: four open folders settle in 
 - Library node clustering.
 - Click-to-navigate to function definitions.
 
-[Unreleased]: https://github.com/thraenbe/cograph/compare/v1.1.1...HEAD
+[Unreleased]: https://github.com/thraenbe/cograph/compare/v1.4.0...HEAD
 [1.1.1]: https://github.com/thraenbe/cograph/compare/v1.1.0...v1.1.1
 [1.1.0]: https://github.com/thraenbe/cograph/compare/v1.0.5...v1.1.0
 [1.0.5]: https://github.com/thraenbe/cograph/compare/v1.0.4...v1.0.5
