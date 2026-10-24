@@ -28,12 +28,14 @@ suite('node analyzers: require() never runs the CLI', () => {
       const res = requireWithArgv(script, ['host', tmp]);
       assert.strictEqual(res.status, 0, res.stderr);
       assert.strictEqual(res.stdout, '');
+      assert.strictEqual(res.stderr, '');
     });
 
     test(`${script}: a short host argv does not exit the process`, () => {
       const res = requireWithArgv(script, []);
       assert.strictEqual(res.status, 0, res.stderr);
       assert.strictEqual(res.stderr, '');
+      assert.strictEqual(res.stdout, '');
     });
   }
 });
