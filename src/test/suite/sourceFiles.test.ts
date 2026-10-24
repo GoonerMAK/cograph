@@ -8,7 +8,7 @@ const { collectSourceFiles, explicitFileList } = require('../../../scripts/sourc
 
 const isTxt = (f: string) => f.endsWith('.txt');
 
-suite('sourceFiles: collectSourceFiles', () => {
+suite('sourceFiles — collectSourceFiles', () => {
   let tmp: string;
 
   setup(() => {
@@ -32,7 +32,7 @@ suite('sourceFiles: collectSourceFiles', () => {
   });
 });
 
-suite('sourceFiles: explicitFileList', () => {
+suite('sourceFiles — explicitFileList', () => {
   let tmp: string;
 
   setup(() => { tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'cograph-filelist-')); });

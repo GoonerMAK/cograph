@@ -1,3 +1,4 @@
+// sourceFiles.js — the files each node analyzer reads: a workspace walk or the --files list.
 'use strict';
 
 const fs = require('fs');
