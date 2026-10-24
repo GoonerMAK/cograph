@@ -8,11 +8,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Fixed
-- **Timeline playback starts without a freeze on large graphs.** Working out when each
-  library node appears looked its target up by scanning every node, once per call, so the
-  panel hung for seconds before the first frame on a big project (about 4 s for 30 000
-  functions and 120 000 calls). The library nodes are now collected once, and the same
-  graph starts in milliseconds.
+- **The timeline no longer stalls on large graphs while working out when library nodes
+  appear.** That step looked each call's target up by scanning every node, once per call,
+  on the panel's main thread. On a synthetic graph of 30 000 functions and 120 000 calls
+  the step alone took about 4 s; the library nodes are now collected once, and the same
+  step takes about 15 ms.
 
 ## [1.4.0] - 2026-10-09
 
