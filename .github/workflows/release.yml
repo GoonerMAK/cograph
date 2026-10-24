@@ -17,6 +17,9 @@ jobs:
       # Actions are pinned to a commit SHA, not a tag: a tag can be moved to other
       # code, a SHA cannot. Dependabot keeps the SHA and the version comment current.
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          # Do not leave GITHUB_TOKEN in .git/config for later steps to read.
+          persist-credentials: false
       - uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6.5.0
         with:
           node-version: '20'
@@ -60,7 +63,8 @@ jobs:
         if: ${{ env.VSCE_PAT != '' }}
         env:
           VSCE_PAT: ${{ secrets.VSCE_PAT }}
-        run: npm run publish
+        # Publish the .vsix that was tested, attested and attached above, not a fresh repackage.
+        run: npm run publish -- --packagePath "${{ steps.vsix.outputs.path }}"
 
       # Publishes the same .vsix to Open VSX (Cursor, Windsurf, VSCodium).
       # Skipped until the OVSX_PAT repository secret is configured.
