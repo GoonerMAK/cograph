@@ -412,6 +412,24 @@ suite('Function popup close', () => {
     assert.strictEqual(inst.card.style.left, leftAtClose);
     assert.ok(!(global as any).state.funcPopups.has('closed-fn'));
   });
+
+  test('a closed popup no longer resizes with the mouse on the document', () => {
+    const prevResize = (global as any).applyResizeDelta;
+    (global as any).applyResizeDelta = applyResizeDelta;
+    try {
+      const inst = createFuncPopupInstance({ id: 'resized-fn', name: 'resizedFunc', file: '/test.ts', line: 1, language: 'typescript' });
+      (global as any).state.funcPopups.set('resized-fn', inst);
+      mouse(inst.card.querySelector('.func-resize-se'), 'mousedown', 0);
+      closeFuncPopupInstance(inst);
+      const widthAtClose = inst.card.style.width;
+
+      mouse(dom.window.document, 'mousemove', 500);
+
+      assert.strictEqual(inst.card.style.width, widthAtClose);
+    } finally {
+      (global as any).applyResizeDelta = prevResize;
+    }
+  });
 });
 
 // ---------------------------------------------------------------------------
