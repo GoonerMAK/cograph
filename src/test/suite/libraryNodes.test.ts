@@ -127,6 +127,17 @@ suite('Library node generation', () => {
     assert.ok(!libNode, 'local function should take priority over library import');
   });
 
+  test('require() bindings in a .ts file are not library imports', () => {
+    const file = path.join(tmpDir, 'cjs.ts');
+    fs.writeFileSync(file, [
+      "const fs = require('fs');",
+      "function run() { fs.readFileSync('x'); }",
+    ].join('\n'));
+    const defs = collectDefinitions([file]);
+    const { libraryNodes } = collectCalls([file], defs);
+    assert.deepStrictEqual(libraryNodes, []);
+  });
+
   test('library edge has isLibraryEdge=true', () => {
     const file = path.join(tmpDir, 'libedge.ts');
     fs.writeFileSync(file, [
