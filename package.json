@@ -1,10 +1,14 @@
 {
   "name": "cograph",
-  "displayName": "CoGraph",
-  "description": "See your Python, TypeScript, JavaScript, Java or C++ project as a living map — functions are nodes, calls are edges",
+  "displayName": "CoGraph | Live codebase map",
+  "description": "Read your codebase like a metro map",
   "version": "1.4.0",
   "publisher": "thraenbe",
   "icon": "media/icon.png",
+  "galleryBanner": {
+    "color": "#0B0F14",
+    "theme": "dark"
+  },
   "repository": {
     "type": "git",
     "url": "https://github.com/thraenbe/cograph.git"

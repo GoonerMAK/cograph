@@ -7,7 +7,7 @@
 [![Open VSX Version](https://img.shields.io/open-vsx/v/thraenbe/cograph?label=open%20vsx)](https://open-vsx.org/extension/thraenbe/cograph)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 
-> See your Python, TypeScript, JavaScript, Java, or C++ project as a living map — functions are nodes, calls are edges. Navigate your codebase by clicking. No configuration required.
+> Read your codebase like a metro map — functions are stations, calls are the lines between them. Python, TypeScript, JavaScript, Java, and C++. Click to jump to code. No configuration required.
 
 When AI writes the code, humans need a better way to understand it. CoGraph is the situational-awareness layer for agentic development: a real-time, multi-dimensional map of what is being built in your project.
 

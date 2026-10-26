@@ -5,6 +5,14 @@ All notable changes to CoGraph are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Changed
+
+- Marketplace listing: display name is now "CoGraph | Live codebase map", the description is
+  "Read your codebase like a metro map", and the Marketplace page header uses the
+  brand navy gallery banner. No functional changes.
+
 ## [1.4.0] - 2026-10-09
 
 The release that took things away. Two of the three AI features were measured rather than
