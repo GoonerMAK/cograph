@@ -11,8 +11,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Vue and Svelte single-file components.** `.vue` and `.svelte` files are analyzed through
   their `<script>` blocks (Vue `<script>` + `<script setup>`, Svelte module + instance), so calls
   from components into `src/` modules appear in the graph. A block with `lang="ts"` goes through
-  the TypeScript analyzer, every other block through the JavaScript one; components inherit that
-  colour. Node positions, jump-to-source and the source popup use the component file's own line
+  the TypeScript analyzer, a plain JavaScript block through the JavaScript one (other script
+  languages, such as `lang="coffee"`, are skipped); components inherit that colour. Node positions, jump-to-source and the source popup use the component file's own line
   numbers. Template expressions (`@click="save()"`) are not analyzed (see README *Limitations*).
 
 ## [1.4.1] - 2026-10-24

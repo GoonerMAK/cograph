@@ -99,7 +99,7 @@ On VS Code 1.101 and later, agent mode (Copilot) sees CoGraph without any setup.
 
 - VS Code 1.75+
 - **Python projects:** Python 3.x available (via `python3`, a virtual environment, or the VS Code Python extension)
-- **TypeScript / JavaScript projects:** Node.js — no additional configuration needed. `.vue` and `.svelte` single-file components are analyzed through their `<script>` blocks (`lang="ts"` goes to the TypeScript analyzer, everything else to the JavaScript one) and inherit the TypeScript / JavaScript colour
+- **TypeScript / JavaScript projects:** Node.js — no additional configuration needed. `.vue` and `.svelte` single-file components are analyzed through their `<script>` blocks (`lang="ts"` goes to the TypeScript analyzer, plain JavaScript to the JavaScript one) and inherit the TypeScript / JavaScript colour
 - **Java projects:** no extra runtime — the analyzer ships with a pure-JS parser
 - **C++ projects:** no extra runtime — the analyzer ships with a tree-sitter WebAssembly grammar
 - **Pull requests in the sidebar (optional):** the [GitHub CLI](https://cli.github.com/) (`gh`), signed in with `gh auth login`
@@ -154,7 +154,7 @@ On VS Code 1.101 and later, agent mode (Copilot) sees CoGraph without any setup.
 - Calls are resolved by name. When a called name has more than 8 definitions in the workspace, only those in the caller's file, then directory, then top-level package are linked; if more than 8 still remain the call is left unresolved (the CoGraph output channel reports how many).
 - Cross-package call edges (into installed libraries) are intentionally excluded — external calls are surfaced through library cluster nodes instead.
 - TypeScript / JavaScript analysis covers static call sites; dynamic patterns (e.g. `eval`, computed property calls) are not tracked.
-- Vue and Svelte components: only the `<script>` blocks are analyzed. Calls made inside the template (`@click="save()"`, `{handler()}`, `on:click={inc}`) are not edges, `<script src="…">` is ignored, and a `</script>` inside a string or comment ends the block early. The parse-free folder view guesses TypeScript for a component until the analyzer reports the real language.
+- Vue and Svelte components: only the `<script>` blocks are analyzed. Calls made inside the template (`@click="save()"`, `{handler()}`, `on:click={inc}`) are not edges, `<script src="…">` and blocks in other script languages (`lang="coffee"`) are ignored, and a `</script>` inside a string or comment ends the block early. The parse-free folder view guesses TypeScript for a component until the analyzer reports the real language.
 - Java and C++ analysis covers statically resolvable calls; macro-heavy or template-heavy C++ code may produce a partial graph.
 - Very large projects may require the Complexity slider or search filter to navigate comfortably.
 
