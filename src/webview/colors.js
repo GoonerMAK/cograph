@@ -5,6 +5,7 @@ const languageColors = {
   javascript: '#f7df1e',
   java:       '#b07219',
   cpp:        '#f34b7d',
+  c:          '#555555',
 };
 
 function getLanguageColor(lang) {

@@ -14,7 +14,7 @@ import { walkProjectFiles, gitLsFiles, isAlwaysSkippedDir, type GitLister } from
  * once, in projectScope.ts; full analyses hand this file list to every analyzer.
  */
 
-export type StructureLanguage = 'python' | 'typescript' | 'javascript' | 'java' | 'cpp';
+export type StructureLanguage = 'python' | 'typescript' | 'javascript' | 'java' | 'cpp' | 'c';
 
 export interface StructureFile {
   path: string;
@@ -46,6 +46,7 @@ const EXT_LANGUAGE: Record<string, StructureLanguage> = {
   '.ts': 'typescript', '.tsx': 'typescript',
   '.js': 'javascript', '.jsx': 'javascript', '.mjs': 'javascript', '.cjs': 'javascript',
   '.java': 'java',
+  '.c': 'c',
   '.cpp': 'cpp', '.cc': 'cpp', '.cxx': 'cpp', '.c++': 'cpp',
   '.hpp': 'cpp', '.hh': 'cpp', '.hxx': 'cpp', '.h++': 'cpp', '.h': 'cpp',
 };
