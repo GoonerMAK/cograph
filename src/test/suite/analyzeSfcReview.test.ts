@@ -2,6 +2,7 @@ import * as assert from 'assert';
 import * as fs from 'fs';
 import * as os from 'os';
 import * as path from 'path';
+import { isAnalyzablePath, isSfcFileName, listProjectSourceFiles } from '../../structureScanner';
 
 /* eslint-disable @typescript-eslint/no-require-imports */
 const sfc = require('../../../scripts/sfcScript.js');
@@ -9,8 +10,9 @@ const tsAnalyzer = require('../../../scripts/analyze_ts.js');
 const jsAnalyzer = require('../../../scripts/analyze_js.js');
 /* eslint-enable @typescript-eslint/no-require-imports */
 
-// The review findings on #121: attribute parsing outside quoted values and script
-// languages neither analyzer parses. Each case fails when its fix is reverted.
+// The review findings on #121: attribute parsing outside quoted values, script
+// languages neither analyzer parses, and upper-case component extensions on the
+// host's discovery paths. Each case fails when its fix is reverted.
 
 interface Node { id: string; name: string; file: string; line: number; language: string }
 
@@ -149,5 +151,38 @@ suite('sfcScript: unsupported script languages', () => {
     const file = path.join(tmp, 'Mixed.svelte');
     fs.writeFileSync(file, COFFEE_AND_JS);
     assert.deepStrictEqual(definitions(jsAnalyzer, [file]).map(n => n.name), ['fromJs']);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Upper-case component extensions on the host's discovery paths
+// ---------------------------------------------------------------------------
+
+suite('host discovery: component extensions in any case', () => {
+  test('isSfcFileName matches .vue / .svelte in any case and nothing else', () => {
+    assert.ok(isSfcFileName('App.VUE'));
+    assert.ok(isSfcFileName('/p/Widget.Svelte'));
+    assert.ok(isSfcFileName('App.vue'));
+    assert.ok(!isSfcFileName('App.vue.bak'));
+    assert.ok(!isSfcFileName('vue'));
+    assert.ok(!isSfcFileName('App.astro'));
+  });
+
+  test('the structure scan and isAnalyzablePath accept App.VUE, as the analyzers do', () => {
+    assert.ok(isAnalyzablePath('src/App.VUE'));
+    assert.ok(isAnalyzablePath('src/Widget.SVELTE'));
+    assert.ok(!isAnalyzablePath('src/App.TS'), 'the TS/JS extensions stay case-sensitive');
+    const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'cograph-sfc-case-'));
+    try {
+      fs.writeFileSync(path.join(tmp, 'App.VUE'), '<script lang="ts">\nexport function a() {}\n</script>\n');
+      const listed = listProjectSourceFiles(tmp, () => null);
+      assert.deepStrictEqual(listed.map(f => [path.basename(f.path), f.language]), [['App.VUE', 'typescript']]);
+      sfc.clearSfcCache();
+      assert.deepStrictEqual(tsAnalyzer.collectTsFiles(tmp).map((f: string) => path.basename(f)), ['App.VUE'],
+        'the analyzer walk agrees with the structure scan');
+    } finally {
+      sfc.clearSfcCache();
+      fs.rmSync(tmp, { recursive: true, force: true });
+    }
   });
 });

@@ -4,7 +4,7 @@ import * as path from 'path';
 import * as fs from 'fs';
 import * as os from 'os';
 import { walkProjectFiles } from './projectScope';
-import { listProjectSourceFiles } from './structureScanner';
+import { listProjectSourceFiles, isSfcFileName } from './structureScanner';
 
 export const MAX_OUTPUT_BYTES = 500 * 1024 * 1024; // 500 MB guard
 export const ANALYSIS_TIMEOUT_MS = 300_000;         // 5 min
@@ -18,7 +18,6 @@ export const RETRY_BACKOFF_MS = [800, 1500, 3000];
 const SOURCE_EXTS = new Set([
   '.py', '.ts', '.tsx', '.js', '.jsx', '.mjs', '.cjs', '.java',
   '.cpp', '.cc', '.cxx', '.c++', '.hpp', '.hh', '.hxx', '.h++', '.h',
-  '.vue', '.svelte', // single-file components: their <script> block goes to the TS/JS analyzer
 ]);
 
 export type AnalyzerStatus =
@@ -251,7 +250,8 @@ export class AnalyzerRunner {
     let count = 0;
     walkProjectFiles(root, (_file, name) => {
       const dot = name.lastIndexOf('.');
-      if (dot >= 0 && SOURCE_EXTS.has(name.slice(dot))) { count++; }
+      // Components (.vue/.svelte, any case): their <script> block goes to the TS/JS analyzer.
+      if ((dot >= 0 && SOURCE_EXTS.has(name.slice(dot))) || isSfcFileName(name)) { count++; }
       return count < cap;
     });
     return count;

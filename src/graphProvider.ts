@@ -6,7 +6,7 @@ export { MAX_OUTPUT_BYTES, ANALYSIS_TIMEOUT_MS } from './analyzerRunner';
 
 import { GitService } from './gitService';
 import { AnalyzerRunner, type AnalyzerRunMeta } from './analyzerRunner';
-import { scanStructure, type StructureTree } from './structureScanner';
+import { scanStructure, isSfcFileName, type StructureTree } from './structureScanner';
 import { mergeGraph } from './graphMerge';
 import { loadCache, scheduleCacheWrite, type CacheLoadResult } from './cacheStore';
 import { WebviewReadyGate } from './webviewReadyGate';
@@ -225,8 +225,7 @@ export class GraphProvider {
             doc.uri.fsPath.endsWith('.jsx') ||
             doc.uri.fsPath.endsWith('.mjs') ||
             doc.uri.fsPath.endsWith('.cjs') ||
-            doc.uri.fsPath.endsWith('.vue') ||
-            doc.uri.fsPath.endsWith('.svelte') ||
+            isSfcFileName(doc.uri.fsPath) ||
             doc.uri.fsPath.endsWith('.java') ||
             doc.uri.fsPath.endsWith('.cpp') ||
             doc.uri.fsPath.endsWith('.cc') ||

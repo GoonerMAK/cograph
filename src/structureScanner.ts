@@ -61,6 +61,17 @@ function dirOf(p: string): string {
   return idx >= 0 ? p.substring(0, idx) : '';
 }
 
+const SFC_EXTS = new Set(['.vue', '.svelte']);
+
+/**
+ * Is this a .vue / .svelte file, in any case (App.VUE)? The same rule as the analyzers'
+ * isSfcPath (scripts/sfcScript.js); every host-side discovery path asks this one.
+ */
+export function isSfcFileName(name: string): boolean {
+  const dot = name.lastIndexOf('.');
+  return dot >= 0 && SFC_EXTS.has(name.slice(dot).toLowerCase());
+}
+
 function languageOf(name: string): StructureLanguage | null {
   if (name.endsWith('.d.ts')) { return null; } // declaration files aren't analyzed
   const dot = name.lastIndexOf('.');
@@ -68,8 +79,10 @@ function languageOf(name: string): StructureLanguage | null {
   const ext = name.slice(dot);
   const exact = EXT_LANGUAGE[ext];
   if (exact) { return exact; }
-  // The C++ analyzer matches extensions case-insensitively (.CPP, .H); the others do not.
-  return EXT_LANGUAGE[ext.toLowerCase()] === 'cpp' ? 'cpp' : null;
+  // The C++ analyzer and the component check match extensions case-insensitively
+  // (.CPP, .H, .VUE); the others do not.
+  const folded = EXT_LANGUAGE[ext.toLowerCase()];
+  return folded === 'cpp' || isSfcFileName(name) ? folded : null;
 }
 
 /**
