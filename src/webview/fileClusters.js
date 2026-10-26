@@ -216,7 +216,9 @@ function folderElement(folderPath, info, isRoot, languageBreakdown, countOverrid
   };
 }
 
-function fileElement(filePath, fnCount, parsed, parsing) {
+// `language`: the analyzed language of the file's graph nodes when it has any (a
+// JavaScript .vue component is 'javascript'); otherwise the parse-free extension guess.
+function fileElement(filePath, fnCount, parsed, parsing, language) {
   const sub = parsing ? 'parsing…'
     : (parsed && fnCount ? `${fnCount} ${fnCount === 1 ? 'fn' : 'fns'}` : '');
   return {
@@ -231,7 +233,7 @@ function fileElement(filePath, fnCount, parsed, parsing) {
       memberCount: fnCount,
       parsed: !!parsed,
       parsing: !!parsing,
-      language: fcLangFromPath(filePath),
+      language: language || fcLangFromPath(filePath),
       file: filePath,
       line: 1,
       _filePath: filePath,
@@ -334,7 +336,8 @@ function buildSkeletonElements(tree, expandedFolders, parsedFolders, graphData, 
       else { elements.push(fileAnchorElement(filePath)); }
     } else {
       // Folder not parsed yet → a collapsed file node (with a spinner while parsing).
-      elements.push(fileElement(filePath, fns.length, false, parsingFolders.has(fcDirname(filePath))));
+      const analyzedLang = fns.find(n => n.language)?.language;
+      elements.push(fileElement(filePath, fns.length, false, parsingFolders.has(fcDirname(filePath)), analyzedLang));
     }
   }
 

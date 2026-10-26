@@ -8,11 +8,13 @@ import { isAnalyzablePath, isSfcFileName, listProjectSourceFiles } from '../../s
 const sfc = require('../../../scripts/sfcScript.js');
 const tsAnalyzer = require('../../../scripts/analyze_ts.js');
 const jsAnalyzer = require('../../../scripts/analyze_js.js');
+const fc = require('../../../src/webview/fileClusters.js');
 /* eslint-enable @typescript-eslint/no-require-imports */
 
 // The review findings on #121: attribute parsing outside quoted values, script
-// languages neither analyzer parses, and upper-case component extensions on the
-// host's discovery paths. Each case fails when its fix is reverted.
+// languages neither analyzer parses, upper-case component extensions on the host's
+// discovery paths, and the collapsed file element's language. Each case fails when
+// its fix is reverted.
 
 interface Node { id: string; name: string; file: string; line: number; language: string }
 
@@ -184,5 +186,32 @@ suite('host discovery: component extensions in any case', () => {
       sfc.clearSfcCache();
       fs.rmSync(tmp, { recursive: true, force: true });
     }
+  });
+});
+
+// ---------------------------------------------------------------------------
+// The collapsed file element's language
+// ---------------------------------------------------------------------------
+
+suite('file clusters: a collapsed component takes its analyzed language', () => {
+  const tree = {
+    root: '/p',
+    folders: { '/p': { path: '/p', depth: 0, parent: null, childFolders: [], files: ['/p/Tick.vue', '/p/User.vue'], fileCount: 2 } },
+    files: [], totalFiles: 2,
+  };
+  const graph = { nodes: [{ id: '/p/Tick.vue::tick::8', name: 'tick', file: '/p/Tick.vue', line: 8, language: 'javascript' }], edges: [] };
+
+  test('a JS component with graph nodes in an unparsed folder is javascript, not the extension guess', () => {
+    const els = fc.buildSkeletonElements(tree, new Set(['/p']), new Set(), graph);
+    const tick = els.find((e: any) => e.data.id === 'file::/p/Tick.vue');
+    assert.ok(tick, 'a collapsed file element');
+    assert.strictEqual(tick.data.language, 'javascript');
+  });
+
+  test('a component without graph nodes falls back to the parse-free extension guess', () => {
+    const els = fc.buildSkeletonElements(tree, new Set(['/p']), new Set(), graph);
+    assert.strictEqual(els.find((e: any) => e.data.id === 'file::/p/User.vue').data.language, 'typescript');
+    const bare = fc.buildSkeletonElements(tree, new Set(['/p']), new Set(), null);
+    assert.strictEqual(bare.find((e: any) => e.data.id === 'file::/p/Tick.vue').data.language, 'typescript');
   });
 });
