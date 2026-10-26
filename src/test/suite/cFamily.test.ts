@@ -5,7 +5,11 @@ import * as path from 'path';
 
 // eslint-disable-next-line @typescript-eslint/no-require-imports
 const cFamily = require('../../../scripts/cFamily.js');
-const { isCHeader, splitCFamilyFiles, collectCFamilyFiles, explicitFileList, pruneRedundantDeclarations } = cFamily;
+const { isCHeader, isCFamilyFile, splitCFamilyFiles, pruneRedundantDeclarations } = cFamily;
+// eslint-disable-next-line @typescript-eslint/no-require-imports
+const { collectSourceFiles, explicitFileList } = require('../../../scripts/sourceFiles.js');
+const collectCFamilyFiles = (root: string) => collectSourceFiles(root, isCFamilyFile);
+const cFamilyFileList = (argv: string[]) => explicitFileList(isCFamilyFile, argv);
 
 // ---------------------------------------------------------------------------
 // The header rule: a .h is C when its directory holds .c files and no C++ source
@@ -67,7 +71,7 @@ suite('cFamily — header rule', () => {
     assert.strictEqual(split.c.length + split.cpp.length, all.length, 'nothing lost, nothing doubled');
   });
 
-  test('collectCFamilyFiles skips artefact and hidden directories, ignores other files', () => {
+  test('the shared walk with isCFamilyFile skips artefact and hidden directories, ignores other files', () => {
     dir('src', ['a.c', 'b.cpp', 'README.md', 'c.py']);
     dir('node_modules', ['skip.c']);
     dir('build', ['skip.c']);
@@ -78,26 +82,26 @@ suite('cFamily — header rule', () => {
 });
 
 // ---------------------------------------------------------------------------
-// --files handling
+// --files handling (sourceFiles.explicitFileList with isCFamilyFile)
 // ---------------------------------------------------------------------------
 
-suite('cFamily — explicitFileList', () => {
+suite('cFamily — --files list', () => {
   let tmpDir: string;
   setup(() => { tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'cograph-cfamily-list-')); });
   teardown(() => { fs.rmSync(tmpDir, { recursive: true, force: true }); });
 
   test('no --files flag → null (full walk)', () => {
-    assert.strictEqual(explicitFileList(['node', 'analyze_c.js', '/root']), null);
+    assert.strictEqual(cFamilyFileList(['node', 'analyze_c.js', '/root']), null);
   });
 
   test('--files keeps only C-family entries, trims blanks', () => {
     const list = path.join(tmpDir, 'list.txt');
     fs.writeFileSync(list, ['/p/a.c', '  /p/b.H ', '/p/c.py', '', '/p/d.CPP', '/p/e.ts'].join('\n'));
-    assert.deepStrictEqual(explicitFileList(['node', 'x', '/root', '--files', list]), ['/p/a.c', '/p/b.H', '/p/d.CPP']);
+    assert.deepStrictEqual(cFamilyFileList(['node', 'x', '/root', '--files', list]), ['/p/a.c', '/p/b.H', '/p/d.CPP']);
   });
 
   test('unreadable list → [] (nothing analysed, no crash)', () => {
-    assert.deepStrictEqual(explicitFileList(['node', 'x', '/root', '--files', path.join(tmpDir, 'nope.txt')]), []);
+    assert.deepStrictEqual(cFamilyFileList(['node', 'x', '/root', '--files', path.join(tmpDir, 'nope.txt')]), []);
   });
 });
 

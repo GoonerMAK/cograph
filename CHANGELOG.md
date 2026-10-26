@@ -26,6 +26,39 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   only at the outermost declarator and skipped the pointer or reference wrapper around the
   function declarator.
 
+## [1.4.1] - 2026-10-24
+
+A patch release. The two user-facing fixes come from [@GoonerMAK](https://github.com/GoonerMAK):
+the timeline no longer freezes on large graphs, and a closed function popup stops listening to
+the mouse. Underneath, the repository tightened its build: lint runs in CI, every Action is pinned
+to a commit, and this is the first release whose `.vsix` carries a signed build provenance.
+
+
+### Fixed
+- **The timeline no longer stalls on large graphs while working out when library nodes
+  appear.** That step looked each call's target up by scanning every node, once per call,
+  on the panel's main thread. On a synthetic graph of 30 000 functions and 120 000 calls
+  the step alone took about 4 s; the library nodes are now collected once, and the same
+  step takes about 15 ms.
+  
+- **A closed function popup lets go of the mouse.** Each popup listened for mouse moves on
+  the whole panel so it could be dragged and resized, and closing it never stopped those
+  listeners. Every popup ever opened kept its card and source text in memory and ran on
+  every mouse move (100 handlers per move after 50 popups). Closing a popup now removes them.
+- TypeScript/JavaScript: a bare `toString()` or `hasOwnProperty.call()` no longer becomes a
+  library node with no package name; only names a file really imports count as libraries.
+
+### Changed
+- CI now runs `npm run lint` on every push and pull request. The PR template has asked for a
+  clean lint since 1.1; this is what enforces it.
+- Every GitHub Action in the workflows is pinned to a commit SHA with the version in a comment,
+  and both workflows declare the least `permissions` they need. Dependabot keeps the pins current.
+
+### Security
+- Releases attest their build provenance (SLSA, via `actions/attest-build-provenance`). A
+  downloaded `.vsix` can be verified with `gh attestation verify <file> -R thraenbe/cograph`.
+- SECURITY.md names 1.4.x as the supported line.
+
 ## [1.4.0] - 2026-10-09
 
 The release that took things away. Two of the three AI features were measured rather than
@@ -463,7 +496,8 @@ Measured on a 3 000-function repository in VS Code: four open folders settle in 
 - Library node clustering.
 - Click-to-navigate to function definitions.
 
-[Unreleased]: https://github.com/thraenbe/cograph/compare/v1.1.1...HEAD
+[Unreleased]: https://github.com/thraenbe/cograph/compare/v1.4.1...HEAD
+[1.4.1]: https://github.com/thraenbe/cograph/compare/v1.4.0...v1.4.1
 [1.1.1]: https://github.com/thraenbe/cograph/compare/v1.1.0...v1.1.1
 [1.1.0]: https://github.com/thraenbe/cograph/compare/v1.0.5...v1.1.0
 [1.0.5]: https://github.com/thraenbe/cograph/compare/v1.0.4...v1.0.5

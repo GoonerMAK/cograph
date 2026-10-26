@@ -85,6 +85,7 @@ function bringToFront(inst) {
 
 function closeFuncPopupInstance(inst) {
   if (inst.saving && inst.saving.timer) { clearTimeout(inst.saving.timer); }
+  inst.docListeners.abort();
   inst.element.remove();
   state.funcPopups.delete(inst.node.id);
   if (typeof fnNameOn === 'function') { fnNameOn(inst.node.id, 'popup', false); }
@@ -197,6 +198,7 @@ function createFuncPopupInstance(d) {
     originalSource: null,
     colorizedHtml: null,
     endLine: null,
+    docListeners: new window.AbortController(),
   };
 
   // ── Initial position (cascade) ─────────────────────────────────────────────
@@ -289,9 +291,9 @@ function createFuncPopupInstance(d) {
     const newTop  = Math.max(0, Math.min(window.innerHeight - cardH, dragStartTop  + e.clientY - dragStartY));
     card.style.left = newLeft + 'px';
     card.style.top  = newTop  + 'px';
-  });
+  }, { signal: inst.docListeners.signal });
 
-  document.addEventListener('mouseup', () => { dragging = false; });
+  document.addEventListener('mouseup', () => { dragging = false; }, { signal: inst.docListeners.signal });
 
   // ── Resize ─────────────────────────────────────────────────────────────────
   let resizing = false;
@@ -318,9 +320,9 @@ function createFuncPopupInstance(d) {
   document.addEventListener('mousemove', (e) => {
     if (!resizing) return;
     applyResizeDelta(card, resizeDir, e.clientX - resStartX, e.clientY - resStartY, resStartLeft, resStartTop, resStartW, resStartH);
-  });
+  }, { signal: inst.docListeners.signal });
 
-  document.addEventListener('mouseup', () => { resizing = false; });
+  document.addEventListener('mouseup', () => { resizing = false; }, { signal: inst.docListeners.signal });
 
   document.body.appendChild(card);
   return inst;
@@ -351,5 +353,5 @@ function showFuncPopup(d) {
 }
 
 if (typeof module !== 'undefined') {
-  module.exports = { createFuncPopupInstance, showFuncPopup };
+  module.exports = { createFuncPopupInstance, closeFuncPopupInstance, showFuncPopup };
 }

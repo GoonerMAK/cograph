@@ -1,9 +1,10 @@
 /**
  * cFamily.js — what the C analyzer (analyze_c.js) and the C++ analyzer
  * (analyze_cpp.js) share: the web-tree-sitter session with its parse cache,
- * the C-family file walk and `--files` handling, the rule that decides whether
- * a `.h` belongs to C or to C++, the declarator helper that finds the function
- * behind pointer/reference wrappers, and the declaration/definition pruning.
+ * the C-family file predicate (the walk itself is sourceFiles.js), the rule
+ * that decides whether a `.h` belongs to C or to C++, the declarator helper
+ * that finds the function behind pointer/reference wrappers, and the
+ * declaration/definition pruning.
  *
  * Header rule: a `.h` file is C when its own directory holds at least one `.c`
  * file and no C++ source (`.cpp`, `.cc`, `.cxx`, `.c++`); otherwise it is C++.
@@ -20,7 +21,6 @@ const path = require('path');
 // with no "main" field, so it must be resolved by name. Node resolves it from
 // node_modules relative to this file regardless of the process cwd.
 const { Parser, Language } = require('web-tree-sitter');
-const { isSkippedDirName } = require('./skipDirs.js');
 
 const C_SOURCE_EXTS   = new Set(['.c']);
 const CPP_SOURCE_EXTS = new Set(['.cpp', '.cc', '.cxx', '.c++']);
@@ -86,40 +86,11 @@ function createTreeSitterSession(grammarWasm) {
 }
 
 // ── Files ────────────────────────────────────────────────────────────────────
+// The walk and `--files` parsing live in sourceFiles.js; this predicate selects
+// the C-family files for it, and splitCFamilyFiles hands each to its analyzer.
 
-/** Every C-family file under `root` (standalone walk; artefact dirs skipped). */
-function collectCFamilyFiles(root) {
-  const results = [];
-  function walk(dir) {
-    let entries;
-    try { entries = fs.readdirSync(dir, { withFileTypes: true }); } catch { return; }
-    for (const entry of entries) {
-      const full = path.join(dir, entry.name);
-      if (entry.isDirectory()) {
-        if (isSkippedDirName(entry.name)) { continue; }
-        walk(full);
-      } else if (entry.isFile() && C_FAMILY_EXTS.has(extOf(entry.name))) {
-        results.push(full);
-      }
-    }
-  }
-  walk(root);
-  return results;
-}
-
-/**
- * Subset mode: `--files <listpath>` restricts the run to the listed C-family
- * files. Returns null when the flag is absent (→ full walk), [] when the list
- * cannot be read.
- */
-function explicitFileList(argv) {
-  const i = argv.indexOf('--files');
-  if (i === -1 || !argv[i + 1]) { return null; }
-  let raw;
-  try { raw = fs.readFileSync(argv[i + 1], 'utf8'); } catch { return []; }
-  return raw.split('\n').map(s => s.trim()).filter(Boolean)
-    .filter(f => C_FAMILY_EXTS.has(extOf(f)));
-}
+/** Is this a C or C++ source or header (by extension, case-insensitive)? */
+function isCFamilyFile(file) { return C_FAMILY_EXTS.has(extOf(file)); }
 
 const headerDirCache = new Map(); // directory -> true when its .h files are C
 
@@ -235,6 +206,6 @@ function pruneRedundantDeclarations(definitions) {
 }
 
 module.exports = {
-  C_FAMILY_EXTS, createTreeSitterSession, collectCFamilyFiles, explicitFileList,
+  C_FAMILY_EXTS, createTreeSitterSession, isCFamilyFile,
   isCHeader, splitCFamilyFiles, findFunctionDeclarator, declaratorName, pruneRedundantDeclarations,
 };

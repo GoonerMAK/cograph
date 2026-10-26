@@ -9,7 +9,9 @@ microservice ceremony.
 
 ## Prerequisites
 
-- **Node.js 20+** and npm
+- **Node.js 20.19 or newer** (22 recommended) and npm. The test and packaging tools pin that floor:
+  Mocha 12 needs `^20.19.0 || >=22.12.0`, and jsdom 30 and `@vscode/vsce` 4 the same; CI runs the
+  latest 20.x. The extension itself runs on VS Code's own Node and has no such requirement.
 - **VS Code 1.75+**
 - **Python 3.x** (only needed to exercise the Python analyzer)
 - Git

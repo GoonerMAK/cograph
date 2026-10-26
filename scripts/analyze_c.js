@@ -32,8 +32,9 @@
 
 const path = require('path');
 const { createNarrower, withStats } = require('./narrowCalls.js');
+const { collectSourceFiles, explicitFileList } = require('./sourceFiles.js');
 const {
-  createTreeSitterSession, collectCFamilyFiles, explicitFileList, splitCFamilyFiles,
+  createTreeSitterSession, isCFamilyFile, splitCFamilyFiles,
   findFunctionDeclarator, declaratorName, pruneRedundantDeclarations,
 } = require('./cFamily.js');
 const { libraryOf } = require('./cStdlib.js');
@@ -50,7 +51,7 @@ const _stats = session.stats;
 
 /** The C files of a workspace: a standalone walk, keeping only what C owns. */
 function collectCFiles(root) {
-  return splitCFamilyFiles(collectCFamilyFiles(root)).c;
+  return splitCFamilyFiles(collectSourceFiles(root, isCFamilyFile)).c;
 }
 
 // ── Definitions pass ──────────────────────────────────────────────────────────
@@ -231,7 +232,7 @@ async function main() {
   const root = process.argv[2];
   // `--files <listpath>` (subset mode) or a full walk; either way only the C
   // share of the C-family files (C++ sources and headers go to analyze_cpp.js).
-  const listed = explicitFileList(process.argv);
+  const listed = explicitFileList(isCFamilyFile);
   const files = listed ? splitCFamilyFiles(listed).c : collectCFiles(root);
   try {
     const definitions = collectDefinitions(files);
