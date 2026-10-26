@@ -6,95 +6,43 @@
  * Outputs a JSON call graph to stdout:
  *   { "nodes": [{id, name, file, line, language, ...}], "edges": [...], "files": [...] }
  *
- * Scope: workspace .cpp/.cc/.cxx/.c++/.hpp/.hh/.hxx/.h++/.h files. Static
- * analysis via web-tree-sitter (WASM) + the bundled tree-sitter-cpp grammar
+ * Scope: workspace .cpp/.cc/.cxx/.c++/.hpp/.hh/.hxx/.h++ files plus the .h
+ * files that belong to C++. A `.h` belongs to C (and to analyze_c.js) when its
+ * own directory holds a `.c` file and no C++ source; otherwise it is C++ (the
+ * rule lives in cFamily.js, shared with the C analyzer). Static analysis via
+ * web-tree-sitter (WASM) + the bundled tree-sitter-cpp grammar
  * (scripts/tree-sitter-cpp.wasm). Handles classes/structs, inheritance, free
  * functions, in-class methods, out-of-line definitions (Foo::bar),
- * constructors, destructors, templates, and qualified calls. stdlib (std::*)
+ * constructors, destructors, templates, qualified calls, and functions that
+ * return a pointer or reference (`int* f()`, `const T& g()`). stdlib (std::*)
  * and other namespace-qualified calls become library nodes. A header
  * declaration is dropped when its definition is found elsewhere (see
- * pruneRedundantDeclarations) so each method yields exactly one node.
+ * pruneRedundantDeclarations in cFamily.js) so each method yields one node.
  */
 
 'use strict';
 
 const path = require('path');
 const { createNarrower, withStats } = require('./narrowCalls.js');
-const fs   = require('fs');
-// Bare specifier (not a path join): web-tree-sitter is an "exports"-only package
-// with no "main" field, so it must be resolved by name. Node resolves it from
-// node_modules relative to this file regardless of the process cwd.
-const { Parser, Language } = require('web-tree-sitter');
+const { collectSourceFiles, explicitFileList } = require('./sourceFiles.js');
+const {
+  createTreeSitterSession, isCFamilyFile, splitCFamilyFiles,
+  findFunctionDeclarator, pruneRedundantDeclarations,
+} = require('./cFamily.js');
 
 const GRAMMAR_WASM = path.join(__dirname, 'tree-sitter-cpp.wasm');
 
-let parser = null;
+// Parser + parse cache (each file is parsed once and the tree reused by both
+// passes; see createTreeSitterSession). `init()` must be awaited before
+// collectDefinitions / collectCalls; `clearTreeCache()` frees the WASM trees
+// once an analysis run completes.
+const session = createTreeSitterSession(GRAMMAR_WASM);
+const { init, getTree, clearTreeCache } = session;
+const _stats = session.stats;
 
-/**
- * Initialise the WASM runtime and load the C++ grammar. Idempotent — safe to
- * call repeatedly. Must be awaited before collectDefinitions / collectCalls.
- *
- * web-tree-sitter is pure WASM, so (unlike the native tree-sitter binding) it
- * has no libstdc++/ABI dependency and loads inside snap/flatpak-confined
- * Electron runtimes.
- */
-async function init() {
-  if (parser) { return parser; }
-  await Parser.init();
-  const Cpp = await Language.load(GRAMMAR_WASM);
-  parser = new Parser();
-  parser.setLanguage(Cpp);
-  return parser;
-}
-
-// ── Parse cache (single-parse optimisation) ───────────────────────────────────
-// collectDefinitions and collectCalls each need the parse tree of every file.
-// Parsing dominates the analyzer's cost, so we parse each file once and reuse
-// the tree across both passes instead of re-parsing it (which doubled analysis
-// time — and this runs on every save). web-tree-sitter trees are WASM-heap
-// objects that are NOT garbage-collected, so clearTreeCache() must free them
-// when an analysis run completes.
-//
-// Trade-off: every tree is held in memory between the two passes (vs one at a
-// time before). Acceptable for typical workspaces; the lower-memory variant (a
-// single walk that extracts call-sites into plain objects and deletes each tree
-// immediately) is recorded in .ai/memory/tech-dept.md as a future option, along
-// with a note to apply this same cache to scripts/analyze_java.js.
-const treeCache = new Map(); // filepath -> Tree | null
-
-// Diagnostic/test counter: number of actual parser.parse() invocations. A run
-// over N files should report N parses, not 2N.
-const _stats = { parses: 0 };
-
-function getTree(filepath) {
-  if (treeCache.has(filepath)) return treeCache.get(filepath);
-  let tree = null;
-  try {
-    const source = fs.readFileSync(filepath, 'utf8');
-    tree = parser.parse(source);
-    if (tree) _stats.parses++;
-  } catch { tree = null; }
-  treeCache.set(filepath, tree ?? null);
-  return tree ?? null;
-}
-
-/** Free all cached WASM trees and empty the cache. Call once per analysis run. */
-function clearTreeCache() {
-  for (const tree of treeCache.values()) {
-    if (tree) { try { tree.delete(); } catch { /* already freed */ } }
-  }
-  treeCache.clear();
-}
-
-const { collectSourceFiles, explicitFileList } = require('./sourceFiles.js');
-const CPP_EXTS = new Set(['.cpp', '.cc', '.cxx', '.c++', '.hpp', '.hh', '.hxx', '.h++', '.h']);
-
-function isCppFile(file) {
-  return CPP_EXTS.has(path.extname(file).toLowerCase());
-}
-
+/** The C++ files of a workspace: a standalone walk, minus the headers C owns. */
 function collectCppFiles(root) {
-  return collectSourceFiles(root, isCppFile);
+  return splitCFamilyFiles(collectSourceFiles(root, isCFamilyFile)).cpp;
 }
 
 // ── AST helpers ───────────────────────────────────────────────────────────────
@@ -287,8 +235,8 @@ function collectDefinitionsFromTree(rootNode, filepath, definitions) {
     }
 
     if (t === 'function_definition') {
-      const funcDecl = node.childForFieldName('declarator');
-      if (funcDecl && funcDecl.type === 'function_declarator') {
+      const funcDecl = findFunctionDeclarator(node.childForFieldName('declarator'));
+      if (funcDecl) {
         const info = describeFunctionDeclarator(funcDecl, topClass()?.className);
         if (info) addDef(info);
       }
@@ -298,9 +246,9 @@ function collectDefinitionsFromTree(rootNode, filepath, definitions) {
     }
 
     if (t === 'field_declaration') {
-      // In-class method declaration without body: `void bar();`
-      const decl = node.childForFieldName('declarator');
-      if (decl && decl.type === 'function_declarator') {
+      // In-class method declaration without body: `void bar();` / `int* get();`
+      const decl = findFunctionDeclarator(node.childForFieldName('declarator'));
+      if (decl) {
         const info = describeFunctionDeclarator(decl, topClass()?.className);
         if (info) addDef(info, /* isDeclaration */ true);
       }
@@ -322,33 +270,6 @@ function collectDefinitionsFromTree(rootNode, filepath, definitions) {
   }
 
   visit(rootNode);
-}
-
-/**
- * Drop declaration-only nodes (a bodyless `void bar();` in a header) when a
- * real definition for the same class+name exists elsewhere in the workspace.
- *
- * Without this, every `.h`/`.cpp` pair yields two nodes for one method and
- * every call edge is duplicated — pure visual noise that also inflates the
- * layout. A declaration with no matching definition (e.g. the body lives in a
- * library or an un-indexed file) is kept so calls still resolve to a node;
- * its internal `isDeclaration` marker is stripped either way.
- */
-function pruneRedundantDeclarations(definitions) {
-  const definedKeys = new Set();
-  for (const def of Object.values(definitions)) {
-    if (!def.isDeclaration) {
-      definedKeys.add(`${def.className || ''}::${def.name}`);
-    }
-  }
-  for (const [id, def] of Object.entries(definitions)) {
-    if (!def.isDeclaration) { continue; }
-    if (definedKeys.has(`${def.className || ''}::${def.name}`)) {
-      delete definitions[id];
-    } else {
-      delete def.isDeclaration; // surviving declaration — drop the internal marker
-    }
-  }
 }
 
 function collectDefinitions(files) {
@@ -513,11 +434,8 @@ function collectCallsFromTree(rootNode, filepath, definitions, nameToIds, import
     }
 
     if (t === 'function_definition') {
-      const funcDecl = node.childForFieldName('declarator');
-      let pushed = false;
-      if (funcDecl && funcDecl.type === 'function_declarator') {
-        pushed = pushCallerForFn(funcDecl);
-      }
+      const funcDecl = findFunctionDeclarator(node.childForFieldName('declarator'));
+      const pushed = funcDecl ? pushCallerForFn(funcDecl) : false;
       try {
         const body = node.childForFieldName('body');
         if (body) for (const c of body.namedChildren) visit(c);
@@ -570,7 +488,10 @@ async function main() {
   }
   await init();
   const root = process.argv[2];
-  const files = explicitFileList(isCppFile) ?? collectCppFiles(root);
+  // `--files <listpath>` (subset mode) or a full walk; either way only the
+  // C++ share of the C-family files (C headers go to analyze_c.js).
+  const listed = explicitFileList(isCFamilyFile);
+  const files = listed ? splitCFamilyFiles(listed).cpp : collectCppFiles(root);
   try {
     const definitions = collectDefinitions(files);
     const { edges, libraryNodes, stats } = collectCalls(files, definitions, root);

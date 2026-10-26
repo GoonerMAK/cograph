@@ -5,6 +5,31 @@ All notable changes to CoGraph are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Added
+- **C.** `.c` files are analysed with the official tree-sitter-c grammar (the C++ grammar
+  mis-parsed C-only identifiers such as a variable named `new`, which made whole functions
+  disappear). The graph shows function definitions, header prototypes (one node per function,
+  even when a header and a `.c` both declare it), direct calls, and callbacks: a function passed
+  as an argument, stored in a variable or struct initializer, assigned or returned is linked
+  from the function that hands it on. Calls into the C standard library become library nodes
+  named by header (`stdio.printf`, `string.memcpy`). A `.h` file counts as C when its directory
+  holds `.c` files and no C++ source; otherwise it stays C++. Not tracked: calls through
+  pointers, macros, file-scope function tables and third-party libraries (see README,
+  *Limitations*).
+
+### Fixed
+- **C++ functions returning a pointer or reference were missing from the graph**, together
+  with every call into them: `int* make_ptr()`, `const Widget& get_ref(...)`,
+  `Widget& Widget::self()` and in-class declarations such as `int* get();`. The analyzer looked
+  only at the outermost declarator and skipped the pointer or reference wrapper around the
+  function declarator.
+
+### Changed
+- The `tree-sitter-c` grammar package is pinned to exactly 0.23.2 (a newer peer range
+  conflicts with `tree-sitter-cpp` and breaks `npm install`; see CONTRIBUTING.md).
+
 ## [1.4.1] - 2026-10-24
 
 A patch release. The two user-facing fixes come from [@GoonerMAK](https://github.com/GoonerMAK):
