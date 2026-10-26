@@ -26,6 +26,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   only at the outermost declarator and skipped the pointer or reference wrapper around the
   function declarator.
 
+### Changed
+- The `tree-sitter-c` grammar package is pinned to exactly 0.23.2 (a newer peer range
+  conflicts with `tree-sitter-cpp` and breaks `npm install`; see CONTRIBUTING.md).
+
 ## [1.4.1] - 2026-10-24
 
 A patch release. The two user-facing fixes come from [@GoonerMAK](https://github.com/GoonerMAK):
