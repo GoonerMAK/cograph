@@ -31,6 +31,7 @@ const FC_EXT_LANG = {
   '.ts': 'typescript', '.tsx': 'typescript',
   '.js': 'javascript', '.jsx': 'javascript', '.mjs': 'javascript', '.cjs': 'javascript',
   '.java': 'java',
+  '.c': 'c',
   '.cpp': 'cpp', '.cc': 'cpp', '.cxx': 'cpp', '.c++': 'cpp',
   '.hpp': 'cpp', '.hh': 'cpp', '.hxx': 'cpp', '.h++': 'cpp', '.h': 'cpp',
   '.vue': 'typescript', '.svelte': 'typescript',

@@ -5,7 +5,7 @@ import * as path from 'path';
 import { spawnSync } from 'child_process';
 
 const SCRIPTS = path.join(__dirname, '..', '..', '..', 'scripts');
-const ANALYZERS = ['analyze_ts.js', 'analyze_js.js', 'analyze_java.js', 'analyze_cpp.js'];
+const ANALYZERS = ['analyze_ts.js', 'analyze_js.js', 'analyze_java.js', 'analyze_cpp.js', 'analyze_c.js'];
 
 suite('node analyzers: require() never runs the CLI', () => {
   let tmp: string;
