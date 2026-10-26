@@ -18,7 +18,8 @@
  * calls resolve against the same analyzer's `.ts` or `.js` definitions.
  *
  * Out of scope: template expressions (`@click="save()"`, `{handler()}`),
- * `<script src="…">` (external script), script languages other than JS/TS, and a
+ * `<script src="…">` (external script), script languages other than JS/TS (such a
+ * block is dropped; a file with no other block is analyzed by neither), and a
  * `</script>` inside a JS string or comment (it ends the block early).
  */
 
@@ -35,18 +36,62 @@ function isSfcPath(filepath) {
   return SFC_EXTENSIONS.has(path.extname(filepath).toLowerCase());
 }
 
-/** Value of attribute `name` in a tag's attribute text, or null when absent. */
-function attrValue(attrs, name) {
-  const re = new RegExp(`(?:^|\\s)${name}\\s*(?:=\\s*(?:"([^"]*)"|'([^']*)'|([^\\s"'>]+)))?`, 'i');
-  const m = re.exec(attrs);
-  if (!m) { return null; }
-  return (m[1] ?? m[2] ?? m[3] ?? '').trim();
+// `lang` values the TS/JS analyzers parse, mapped to the analyzer flavour. Any
+// other language (`coffee`, `livescript`, …) is not JavaScript: its block is dropped.
+const SCRIPT_LANGS = new Map([
+  ['', 'js'], ['js', 'js'], ['javascript', 'js'], ['jsx', 'js'],
+  ['ts', 'ts'], ['typescript', 'ts'], ['tsx', 'tsx'],
+]);
+
+const isSpace = (c) => c === ' ' || c === '\t' || c === '\n' || c === '\r' || c === '\f';
+const isQuote = (c) => c === '"' || c === "'";
+
+/** Index just past the quoted run that opens at `i` (or the end when unclosed). */
+function skipQuoted(text, i) {
+  const close = text.indexOf(text[i], i + 1);
+  return close === -1 ? text.length : close + 1;
 }
 
-/** `lang` attribute of a `<script …>` tag, lower-cased; 'js' when absent. */
+/**
+ * The attributes of a tag's attribute text as a Map of lower-cased name → value
+ * ('' for a bare attribute). A linear scan, not a regex: a name is read only
+ * between attributes, so `src` inside `generic="T extends { src: string }"` is
+ * part of a quoted value, and `data-src` is one name, never `src`. Values may be
+ * double-quoted, single-quoted or unquoted; the first occurrence of a name wins.
+ */
+function parseAttrs(text) {
+  const attrs = new Map();
+  let i = 0;
+  while (i < text.length) {
+    if (isSpace(text[i]) || text[i] === '/') { i++; continue; }
+    if (isQuote(text[i])) { i = skipQuoted(text, i); continue; } // a stray quoted run is no name
+    const nameStart = i;
+    while (i < text.length && !isSpace(text[i]) && text[i] !== '/' && text[i] !== '=' && !isQuote(text[i])) { i++; }
+    const name = text.slice(nameStart, i).toLowerCase();
+    while (i < text.length && isSpace(text[i])) { i++; }
+    let value = '';
+    if (text[i] === '=') {
+      i++;
+      while (i < text.length && isSpace(text[i])) { i++; }
+      if (isQuote(text[i])) {
+        const close = text.indexOf(text[i], i + 1);
+        value = text.slice(i + 1, close === -1 ? text.length : close);
+        i = close === -1 ? text.length : close + 1;
+      } else {
+        const valueStart = i;
+        while (i < text.length && !isSpace(text[i])) { i++; }
+        value = text.slice(valueStart, i);
+      }
+    }
+    if (name && !attrs.has(name)) { attrs.set(name, value.trim()); }
+  }
+  return attrs;
+}
+
+/** 'ts' | 'tsx' | 'js' for a `<script>` tag's attributes; null for an unsupported `lang`. */
 function scriptLang(attrs) {
-  const lang = (attrValue(attrs, 'lang') || '').toLowerCase();
-  return lang || 'js';
+  const lang = (attrs.get('lang') ?? '').toLowerCase();
+  return SCRIPT_LANGS.get(lang) ?? null;
 }
 
 /**
@@ -76,8 +121,10 @@ function lineAt(source, offset) {
  * Each block: { code, lang, line, start, end, attrs } where `start`/`end` are the
  * code's character offsets in `source` and `line` is the 1-based line on which
  * the code starts (the opening tag's line; the code usually begins with the
- * newline right after the tag). Blocks with a `src` attribute are external and
- * are skipped; `<script>` tags inside HTML comments are ignored.
+ * newline right after the tag); `attrs` is the tag's attribute Map. Blocks with
+ * a `src` attribute are external and are skipped, as are blocks in a language
+ * the analyzers do not parse (`lang="coffee"`): they stay blank in the virtual
+ * source. `<script>` tags inside HTML comments are ignored.
  */
 function extractScriptBlocks(source) {
   const blocks = [];
@@ -92,22 +139,23 @@ function extractScriptBlocks(source) {
     }
     const gt = tagEnd(source, m.index + m[0].length);
     if (gt === -1) { break; }
-    const attrs = source.slice(m.index + m[0].length, gt);
+    const attrs = parseAttrs(source.slice(m.index + m[0].length, gt));
     const start = gt + 1;
     const closeTag = /<\/script\s*>/gi;
     closeTag.lastIndex = start;
     const c = closeTag.exec(source);
     const end = c ? c.index : source.length;
     open.lastIndex = c ? c.index + c[0].length : source.length;
-    if (attrValue(attrs, 'src') !== null) { continue; }
-    blocks.push({ code: source.slice(start, end), lang: scriptLang(attrs), line: lineAt(source, start), start, end, attrs });
+    const lang = scriptLang(attrs);
+    if (attrs.has('src') || lang === null) { continue; }
+    blocks.push({ code: source.slice(start, end), lang, line: lineAt(source, start), start, end, attrs });
   }
   return blocks;
 }
 
 /**
  * 'ts' | 'tsx' | 'js' for the SFC's script blocks (the TS flavour wins when any
- * block declares it), or null when the file has no script block.
+ * block declares it), or null when the file has no supported script block.
  */
 function sfcScriptLanguage(blocks) {
   if (blocks.length === 0) { return null; }
@@ -182,6 +230,6 @@ function clearSfcCache() {
 }
 
 module.exports = {
-  SFC_EXTENSIONS, isSfcPath, extractScriptBlocks, sfcScriptLanguage, sfcVirtualSource,
+  SFC_EXTENSIONS, isSfcPath, parseAttrs, extractScriptBlocks, sfcScriptLanguage, sfcVirtualSource,
   sfcAnalyzerFor, ownsSfc, readAnalyzerSource, clearSfcCache,
 };
