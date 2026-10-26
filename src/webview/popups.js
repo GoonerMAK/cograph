@@ -353,5 +353,5 @@ function showFuncPopup(d) {
 }
 
 if (typeof module !== 'undefined') {
-  module.exports = { createFuncPopupInstance, closeFuncPopupInstance, showFuncPopup };
+  module.exports = { createFuncPopupInstance, closeFuncPopupInstance, showFuncPopup, showLibDocPopup };
 }
