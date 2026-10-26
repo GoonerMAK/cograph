@@ -781,11 +781,14 @@ function showContextMenu(event, items) {
   if (!menu || !list) return;
   const actionItems = items.filter(item => !item.isHeader);
   let actionIdx = 0;
-  list.innerHTML = items
-    .map(item => item.isHeader
-      ? `<li class="ctx-menu-header">${item.label}</li>`
-      : `<li class="ctx-menu-item" data-idx="${actionIdx++}">${item.label}</li>`)
-    .join('');
+  // Header labels are file and folder names: text, never markup.
+  list.replaceChildren(...items.map(item => {
+    const li = document.createElement('li');
+    if (item.isHeader) { li.className = 'ctx-menu-header'; }
+    else { li.className = 'ctx-menu-item'; li.dataset.idx = String(actionIdx++); }
+    li.textContent = item.label;
+    return li;
+  }));
   list.querySelectorAll('.ctx-menu-item').forEach((li, i) => {
     li.addEventListener('click', e => { e.stopPropagation(); actionItems[i].action(); hideContextMenu(); });
   });
