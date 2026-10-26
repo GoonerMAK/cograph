@@ -11,7 +11,6 @@
 const HEADERS = {
   assert: 'assert static_assert',
   ctype: 'isalnum isalpha isblank iscntrl isdigit isgraph islower isprint ispunct isspace isupper isxdigit tolower toupper',
-  errno: 'perror strerror',
   inttypes: 'imaxabs imaxdiv strtoimax strtoumax',
   locale: 'setlocale localeconv',
   math: 'fabs fmod remainder fma fmax fmin fdim nan exp exp2 expm1 log log10 log2 log1p pow sqrt cbrt hypot sin cos tan asin acos atan atan2 '
@@ -23,13 +22,13 @@ const HEADERS = {
   stdio: 'printf fprintf sprintf snprintf vprintf vfprintf vsprintf vsnprintf scanf fscanf sscanf vscanf vfscanf vsscanf '
     + 'fopen freopen fclose fflush fread fwrite fgetc getc getchar fgets fputc putc putchar fputs puts ungetc '
     + 'fseek ftell rewind fgetpos fsetpos feof ferror clearerr remove rename tmpfile tmpnam setbuf setvbuf '
-    + 'fileno fdopen getline getdelim dprintf popen pclose',
+    + 'fileno fdopen getline getdelim dprintf popen pclose perror',
   stdlib: 'malloc calloc realloc free aligned_alloc abort exit atexit quick_exit at_quick_exit _Exit getenv setenv unsetenv system '
     + 'atoi atol atoll atof strtol strtoll strtoul strtoull strtof strtod strtold rand srand random srandom '
     + 'qsort bsearch abs labs llabs div ldiv lldiv mblen mbtowc wctomb mbstowcs wcstombs realpath mkstemp',
   string: 'memcpy memmove memset memcmp memchr strcpy strncpy strcat strncat strcmp strncmp strcoll strxfrm '
     + 'strchr strrchr strspn strcspn strpbrk strstr strtok strtok_r strlen strnlen strdup strndup strcasecmp strncasecmp '
-    + 'memccpy stpcpy stpncpy strsep strlcpy strlcat',
+    + 'memccpy stpcpy stpncpy strsep strlcpy strlcat strerror',
   time: 'time clock difftime mktime asctime ctime gmtime localtime strftime timespec_get nanosleep gettimeofday clock_gettime',
   wchar: 'wprintf fwprintf swprintf wscanf wcslen wcscpy wcsncpy wcscat wcscmp wcsncmp wcschr wcsstr wcstol wcstod mbrtowc wcrtomb',
   wctype: 'iswalpha iswdigit iswspace iswupper iswlower towlower towupper',

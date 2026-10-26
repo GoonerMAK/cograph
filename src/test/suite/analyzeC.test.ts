@@ -230,6 +230,16 @@ suite('collectCalls (C)', () => {
     assert.ok(edges.some((e: any) => e.source === idOf('a') && e.target === printf.id && e.isLibraryEdge === true));
   });
 
+  test('perror and strerror belong to the headers that declare them (stdio.h, string.h), not errno.h', () => {
+    // errno.h declares only `errno` and the E* macros, so no library node is named "errno".
+    const { libraryNodes } = analyse(tmpDir, { 'f.c': [
+      '#include <stdio.h>', '#include <string.h>', '#include <errno.h>',
+      'void fail(void) { perror("open"); fprintf(stderr, "%s", strerror(errno)); }',
+    ] });
+    const names = libraryNodes.map((n: any) => `${n.libraryName}.${n.name}`).sort();
+    assert.deepStrictEqual(names, ['stdio.fprintf', 'stdio.perror', 'string.strerror']);
+  });
+
   test('a workspace function shadowing a libc name is linked internally, not as a library', () => {
     const { hasEdge, libraryNodes } = analyse(tmpDir, { 'f.c': ['void *memcpy(void *d, const void *s, unsigned n) { return d; }', 'void run(void) { memcpy(0, 0, 0); }'] });
     assert.ok(hasEdge('run', 'memcpy'));
