@@ -98,7 +98,7 @@ function collectDefinitions(files, options) {
  * require() bindings. Returns a map of local name -> package/module specifier.
  */
 function collectImportMap(sourceFile, options) {
-  const importMap = {};
+  const importMap = Object.create(null);
 
   ts.forEachChild(sourceFile, node => {
     // ESM: import React from 'react' / import * as fs from 'fs' / import { x } from 'pkg'

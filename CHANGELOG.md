@@ -24,6 +24,8 @@ to a commit, and this is the first release whose `.vsix` carries a signed build 
   the whole panel so it could be dragged and resized, and closing it never stopped those
   listeners. Every popup ever opened kept its card and source text in memory and ran on
   every mouse move (100 handlers per move after 50 popups). Closing a popup now removes them.
+- TypeScript/JavaScript: a bare `toString()` or `hasOwnProperty.call()` no longer becomes a
+  library node with no package name; only names a file really imports count as libraries.
 
 ### Changed
 - CI now runs `npm run lint` on every push and pull request. The PR template has asked for a
