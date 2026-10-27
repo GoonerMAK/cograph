@@ -37,6 +37,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - The `tree-sitter-c` grammar package is pinned to exactly 0.23.2 (a newer peer range
   conflicts with `tree-sitter-cpp` and breaks `npm install`; see CONTRIBUTING.md).
 
+### Security
+- **Repository text is rendered as text, never as markup** (code scanning alert #2). The
+  language legend and the context-menu headers built their HTML from language names and
+  file or folder names, so a repository could inject markup into the panel. It needed either
+  a committed `.cograph/graph-cache.json` or a file named like an HTML tag. The panel's
+  Content Security Policy already stopped any script from running. Both are now built as DOM
+  nodes.
+- **The layout worker only runs its own message handlers** (code scanning alert #7). A
+  message type such as `hasOwnProperty` reached `Object.prototype` and threw, which dropped
+  the frame back to the main-thread simulation.
+
 ## [1.4.1] - 2026-10-24
 
 A patch release. The two user-facing fixes come from [@GoonerMAK](https://github.com/GoonerMAK):
