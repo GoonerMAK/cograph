@@ -7,11 +7,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-### Changed
+## [1.4.2] - 2026-10-27
 
-- Marketplace listing: display name is now "CoGraph | Live codebase map", the description is
-  "Read your codebase like a metro map", and the Marketplace page header uses the
-  brand navy gallery banner. No functional changes.
+A patch release with two new languages and a round of analyzer work from
+[@GoonerMAK](https://github.com/GoonerMAK). C files get their own grammar instead of riding on
+the C++ one, Vue and Svelte components appear in TypeScript and JavaScript graphs, and C++
+functions that return a pointer or reference are back in the graph. The TypeScript and
+JavaScript analyzers share one core now, which also removed a class of stray library nodes.
+Two code scanning findings are closed, and the Marketplace listing has a new name and banner.
+
 ### Added
 - **Vue and Svelte single-file components.** `.vue` and `.svelte` files are analyzed through
   their `<script>` blocks (Vue `<script>` + `<script setup>`, Svelte module + instance), so calls
@@ -31,16 +35,25 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   pointers, macros, file-scope function tables and third-party libraries (see README,
   *Limitations*).
 
+### Changed
+- Marketplace listing: display name is now "CoGraph | Live codebase map", the description is
+  "Read your codebase like a metro map", and the Marketplace page header uses the
+  brand navy gallery banner. No functional changes.
+- The `tree-sitter-c` grammar package is pinned to exactly 0.23.2 (a newer peer range
+  conflicts with `tree-sitter-cpp` and breaks `npm install`; see CONTRIBUTING.md).
+- The TypeScript and JavaScript analyzers now run on one shared core
+  (`scripts/tsJsAnalyzer.js`), and all analyzers share one file walk (`scripts/sourceFiles.js`).
+  The graphs they produce are unchanged, apart from the fix below.
+- Dependency updates for the test and packaging tools (jsdom 30, `@vscode/vsce` 4).
+
 ### Fixed
 - **C++ functions returning a pointer or reference were missing from the graph**, together
   with every call into them: `int* make_ptr()`, `const Widget& get_ref(...)`,
   `Widget& Widget::self()` and in-class declarations such as `int* get();`. The analyzer looked
   only at the outermost declarator and skipped the pointer or reference wrapper around the
   function declarator.
-
-### Changed
-- The `tree-sitter-c` grammar package is pinned to exactly 0.23.2 (a newer peer range
-  conflicts with `tree-sitter-cpp` and breaks `npm install`; see CONTRIBUTING.md).
+- TypeScript/JavaScript: a bare `toString()` or `hasOwnProperty.call()` no longer becomes a
+  library node with no package name; only names a file really imports count as libraries.
 
 ### Security
 - **Repository text is rendered as text, never as markup** (code scanning alert #2). The
@@ -72,8 +85,6 @@ to a commit, and this is the first release whose `.vsix` carries a signed build 
   the whole panel so it could be dragged and resized, and closing it never stopped those
   listeners. Every popup ever opened kept its card and source text in memory and ran on
   every mouse move (100 handlers per move after 50 popups). Closing a popup now removes them.
-- TypeScript/JavaScript: a bare `toString()` or `hasOwnProperty.call()` no longer becomes a
-  library node with no package name; only names a file really imports count as libraries.
 
 ### Changed
 - CI now runs `npm run lint` on every push and pull request. The PR template has asked for a
@@ -523,7 +534,8 @@ Measured on a 3 000-function repository in VS Code: four open folders settle in 
 - Library node clustering.
 - Click-to-navigate to function definitions.
 
-[Unreleased]: https://github.com/thraenbe/cograph/compare/v1.4.1...HEAD
+[Unreleased]: https://github.com/thraenbe/cograph/compare/v1.4.2...HEAD
+[1.4.2]: https://github.com/thraenbe/cograph/compare/v1.4.1...v1.4.2
 [1.4.1]: https://github.com/thraenbe/cograph/compare/v1.4.0...v1.4.1
 [1.1.1]: https://github.com/thraenbe/cograph/compare/v1.1.0...v1.1.1
 [1.1.0]: https://github.com/thraenbe/cograph/compare/v1.0.5...v1.1.0
