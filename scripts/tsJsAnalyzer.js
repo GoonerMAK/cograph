@@ -2,23 +2,43 @@
 'use strict';
 
 const { createNarrower, withStats, resolveThisCall } = require('./narrowCalls.js');
-const fs   = require('fs');
 // Bare specifier so esbuild can inline it into the packaged bundle (dev runs
 // resolve it from the repo's node_modules via normal module resolution).
 const ts   = require('typescript');
 
 const { collectSourceFiles, explicitFileList } = require('./sourceFiles.js');
+const { isSfcPath, ownsSfc, readAnalyzerSource } = require('./sfcScript.js');
+
+// ScriptKind of a .vue/.svelte script block, by its `lang` (sfcScript.js).
+const SFC_SCRIPT_KINDS = { ts: ts.ScriptKind.TS, tsx: ts.ScriptKind.TSX, js: ts.ScriptKind.JS };
+
+/**
+ * A file this analyzer parses: one of its own extensions, or a .vue/.svelte
+ * component it owns (`lang="ts"`/`"tsx"` → TypeScript, other JS → JavaScript).
+ */
+function isAnalyzedFile(file, options) {
+  if (isSfcPath(file)) return ownsSfc(file, options.sfcAnalyzer);
+  return options.isSourceFile(file);
+}
 
 function collectFiles(root, options) {
-  return collectSourceFiles(root, options.isSourceFile);
+  return collectSourceFiles(root, (file) => isAnalyzedFile(file, options));
 }
 
 function getLine(sourceFile, node) {
   return ts.getLineAndCharacterOfPosition(sourceFile, node.getStart(sourceFile)).line + 1;
 }
 
-function parse(filepath, source, options) {
-  return ts.createSourceFile(filepath, source, ts.ScriptTarget.Latest, true, options.scriptKind);
+/**
+ * Parses `filepath`, or null when it is unreadable or a component this analyzer
+ * does not own. A component is parsed as its virtual source (sfcScript.js): the
+ * file's own line count with everything outside the script blocks blanked.
+ */
+function parse(filepath, options) {
+  const read = readAnalyzerSource(filepath, options.sfcAnalyzer);
+  if (!read) return null;
+  const scriptKind = read.lang ? SFC_SCRIPT_KINDS[read.lang] : options.scriptKind;
+  return ts.createSourceFile(filepath, read.source, ts.ScriptTarget.Latest, true, scriptKind);
 }
 
 function classInfo(classNode, sourceFile) {
@@ -41,12 +61,11 @@ function collectDefinitions(files, options) {
   const language = options.language;
   const definitions = {};
   for (const filepath of files) {
-    let source;
-    try { source = fs.readFileSync(filepath, 'utf8'); } catch { continue; }
     let sourceFile;
     try {
-      sourceFile = parse(filepath, source, options);
+      sourceFile = parse(filepath, options);
     } catch { continue; }
+    if (!sourceFile) continue;
 
     function visit(node) {
       try {
@@ -176,12 +195,11 @@ function collectCalls(files, definitions, root, options) {
   const libraryNodes = new Map();
 
   for (const filepath of files) {
-    let source;
-    try { source = fs.readFileSync(filepath, 'utf8'); } catch { continue; }
     let sourceFile;
     try {
-      sourceFile = parse(filepath, source, options);
+      sourceFile = parse(filepath, options);
     } catch { continue; }
+    if (!sourceFile) continue;
 
     const importMap = collectImportMap(sourceFile, options);
 
@@ -288,11 +306,11 @@ function main(options) {
     process.exit(1);
   }
   const root = process.argv[2];
-  const files = explicitFileList(options.isSourceFile) ?? collectFiles(root, options);
+  const files = explicitFileList((file) => isAnalyzedFile(file, options)) ?? collectFiles(root, options);
   const definitions = collectDefinitions(files, options);
   const { edges, libraryNodes, stats } = collectCalls(files, definitions, root, options);
   const nodes = [...Object.values(definitions), ...libraryNodes];
   require('./graphOutput.js').writeGraph(withStats({ nodes, edges, files }, stats));
 }
 
-module.exports = { collectFiles, collectDefinitions, collectCalls, main };
+module.exports = { isAnalyzedFile, collectFiles, collectDefinitions, collectCalls, main };

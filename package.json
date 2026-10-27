@@ -1,7 +1,7 @@
 {
   "name": "cograph",
   "displayName": "CoGraph",
-  "description": "See your Python, TypeScript, JavaScript, Java, C or C++ project as a living map — functions are nodes, calls are edges",
+  "description": "See your Python, TypeScript, JavaScript, Vue, Svelte, Java, C or C++ project as a living map — functions are nodes, calls are edges",
   "version": "1.4.1",
   "publisher": "thraenbe",
   "icon": "media/icon.png",
@@ -18,6 +18,8 @@
     "python",
     "typescript",
     "javascript",
+    "vue",
+    "svelte",
     "java",
     "c",
     "cpp",

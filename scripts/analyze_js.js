@@ -6,8 +6,11 @@
  * Outputs a JSON call graph to stdout:
  *   { "nodes": [{id, name, file, line, language}], "edges": [{source, target}] }
  *
- * Scope: workspace .js/.jsx/.mjs/.cjs files. Best-effort static analysis.
- * Handles both ESM (import) and CommonJS (require()) imports.
+ * Scope: workspace .js/.jsx/.mjs/.cjs files, plus the `<script>` blocks of .vue /
+ * .svelte single-file components that are not `lang="ts"` (sfcScript.js; a
+ * component is parsed as a virtual source with the file's own line numbers).
+ * Template expressions (`@click="save()"`, `{handler()}`) are not analyzed.
+ * Best-effort static analysis. Handles both ESM (import) and CommonJS (require()) imports.
  */
 
 'use strict';
@@ -23,11 +26,17 @@ const options = {
   scriptName: 'analyze_js.js',
   scriptKind: ts.ScriptKind.JS,
   cjsRequire: true,
+  sfcAnalyzer: 'js',
   isSourceFile: (file) => JS_EXTENSIONS.has(path.extname(file)),
 };
 
 function collectJsFiles(root) {
   return core.collectFiles(root, options);
+}
+
+/** A file this analyzer parses: .js/.jsx/.mjs/.cjs or a component whose script is JavaScript. */
+function isJsPath(file) {
+  return core.isAnalyzedFile(file, options);
 }
 
 function collectDefinitions(files) {
@@ -43,5 +52,5 @@ if (require.main === module) {
 }
 
 if (typeof module !== 'undefined') {
-  module.exports = { collectJsFiles, collectDefinitions, collectCalls };
+  module.exports = { collectJsFiles, collectDefinitions, collectCalls, isJsPath };
 }

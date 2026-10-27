@@ -279,6 +279,14 @@ suite('AnalyzerRunner', () => {
       assert.strictEqual(runner.countCandidateSourceFiles(tmpDir, 99), 2, 'only src/a.ts and src/b.py count');
     });
 
+    test('counts components in any case (App.VUE), as the structure scan and the analyzers do', () => {
+      fs.writeFileSync(path.join(tmpDir, 'App.VUE'), '');
+      fs.writeFileSync(path.join(tmpDir, 'Widget.svelte'), '');
+      fs.writeFileSync(path.join(tmpDir, 'App.vue.bak'), '');
+      const { runner } = makeRunner(sandbox);
+      assert.strictEqual(runner.countCandidateSourceFiles(tmpDir, 99), 2);
+    });
+
     test('early-exits at cap', () => {
       for (let i = 0; i < 10; i++) { fs.writeFileSync(path.join(tmpDir, `f${i}.js`), ''); }
       const { runner } = makeRunner(sandbox);

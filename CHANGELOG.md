@@ -8,6 +8,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- **Vue and Svelte single-file components.** `.vue` and `.svelte` files are analyzed through
+  their `<script>` blocks (Vue `<script>` + `<script setup>`, Svelte module + instance), so calls
+  from components into `src/` modules appear in the graph. A block with `lang="ts"` goes through
+  the TypeScript analyzer, a plain JavaScript block through the JavaScript one (other script
+  languages, such as `lang="coffee"`, are skipped); components inherit that colour. Node
+  positions, jump-to-source and the source popup use the component file's own line numbers.
+  Template expressions (`@click="save()"`) are not analyzed (see README *Limitations*).
 - **C.** `.c` files are analysed with the official tree-sitter-c grammar (the C++ grammar
   mis-parsed C-only identifiers such as a variable named `new`, which made whole functions
   disappear). The graph shows function definitions, header prototypes (one node per function,

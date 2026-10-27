@@ -5,6 +5,7 @@ const fs = require('fs');
 const path = require('path');
 const { isSkippedDirName } = require('./skipDirs.js');
 
+// isSourceFile receives the file's full path (a .vue/.svelte check reads the file).
 function collectSourceFiles(root, isSourceFile) {
   const results = [];
   function walk(dir) {
@@ -14,7 +15,7 @@ function collectSourceFiles(root, isSourceFile) {
       const full = path.join(dir, entry.name);
       if (entry.isDirectory()) {
         if (!isSkippedDirName(entry.name)) walk(full);
-      } else if (entry.isFile() && isSourceFile(entry.name)) {
+      } else if (entry.isFile() && isSourceFile(full)) {
         results.push(full);
       }
     }

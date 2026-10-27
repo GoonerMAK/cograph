@@ -27,6 +27,13 @@ suite('sourceFiles — collectSourceFiles', () => {
     assert.deepStrictEqual(rel, [path.join('src', 'a.txt'), path.join('src', 'deep', 'f.txt')]);
   });
 
+  test('the predicate receives the full path, so it can read the file (a .vue routing check does)', () => {
+    const seen: string[] = [];
+    collectSourceFiles(tmp, (f: string) => { seen.push(f); return false; });
+    assert.ok(seen.includes(path.join(tmp, 'src', 'a.txt')), seen.join(', '));
+    assert.ok(seen.every((f) => path.isAbsolute(f)));
+  });
+
   test('a missing root yields no files', () => {
     assert.deepStrictEqual(collectSourceFiles(path.join(tmp, 'absent'), isTxt), []);
   });
