@@ -7,6 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+- Marketplace listing: display name is now "CoGraph | Live codebase map", the description is
+  "Read your codebase like a metro map", and the Marketplace page header uses the
+  brand navy gallery banner. No functional changes.
 ### Added
 - **Vue and Svelte single-file components.** `.vue` and `.svelte` files are analyzed through
   their `<script>` blocks (Vue `<script>` + `<script setup>`, Svelte module + instance), so calls
